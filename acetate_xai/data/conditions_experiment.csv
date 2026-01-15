@@ -1,0 +1,23 @@
+condition_id,set_name,pH0,yeast_extract_gL,nh4cl_gL,acetate_mM,notes,measured_OD
+YE_00,yeast_gradient,7.0,0.0,1.0,140,Base medium except YE,0.65258594
+YE_01,yeast_gradient,7.0,0.1,1.0,140,Base medium except YE,0.827062042
+YE_02,yeast_gradient,7.0,0.2,1.0,140,Base medium except YE,0.994740374
+YE_03,yeast_gradient,7.0,0.3,1.0,140,Base medium except YE,1.119366161
+YE_04,yeast_gradient,7.0,0.4,1.0,140,Base medium except YE,1.262119335
+YE_05,yeast_gradient,7.0,0.5,1.0,140,Base medium except YE,1.463333333
+PH_O_60,pH_YE_toggle,6.0,0.5,1.0,140,Yeast present (YE=0.5 g/L),0.008
+PH_O_65,pH_YE_toggle,6.5,0.5,1.0,140,Yeast present (YE=0.5 g/L),0.52
+PH_O_70,pH_YE_toggle,7.0,0.5,1.0,140,Yeast present (YE=0.5 g/L),1.46
+PH_O_75,pH_YE_toggle,7.5,0.5,1.0,140,Yeast present (YE=0.5 g/L),1.68
+PH_X_60,pH_YE_toggle,6.0,0.0,1.0,140,No yeast extract,0.011
+PH_X_65,pH_YE_toggle,6.5,0.0,1.0,140,No yeast extract,0.072
+PH_X_70,pH_YE_toggle,7.0,0.0,1.0,140,No yeast extract,0.561
+PH_X_75,pH_YE_toggle,7.5,0.0,1.0,140,No yeast extract,1.092
+NH4_025,nh4_gradient,7.0,0.2,0.25,140,NH4 gradient uses YE=0.2 g/L,0.573
+NH4_05,nh4_gradient,7.0,0.2,0.5,140,NH4 gradient uses YE=0.2 g/L,1.016
+NH4_10,nh4_gradient,7.0,0.2,1.0,140,NH4 gradient uses YE=0.2 g/L,0.919
+NH4_20,nh4_gradient,7.0,0.2,2.0,140,NH4 gradient uses YE=0.2 g/L,0.494
+AC_25,acetate_gradient,7.0,0.5,1.0,25,Acetate gradient; others base,0.575
+AC_50,acetate_gradient,7.0,0.5,1.0,50,Acetate gradient; others base,0.886
+AC_100,acetate_gradient,7.0,0.5,1.0,100,Acetate gradient; others base,1.646
+AC_150,acetate_gradient,7.0,0.5,1.0,150,Acetate gradient; others base,1.296

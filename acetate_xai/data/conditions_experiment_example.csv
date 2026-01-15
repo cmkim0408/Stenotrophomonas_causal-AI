@@ -1,0 +1,6 @@
+condition_id,set_name,pH0,yeast_extract_gL,nh4cl_gL,acetate_mM,notes,measured_OD
+YE_00,yeast_gradient,7.0,0.0,1.0,140,Base medium except YE,0.65258594
+YE_02,yeast_gradient,7.0,0.2,1.0,140,Base medium except YE,0.994740374
+PH_O_60,pH_YE_toggle,6.0,0.5,1.0,140,Yeast present (YE=0.5 g/L),0.008
+NH4_05,nh4_gradient,7.0,0.2,0.5,140,NH4 gradient uses YE=0.2 g/L,1.016
+AC_100,acetate_gradient,7.0,0.5,1.0,100,Acetate gradient; others base,1.646

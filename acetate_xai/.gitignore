@@ -8,7 +8,10 @@ build/
 dist/
 
 results/
-data/
+data/*
+!data/conditions_experiment.csv
+!data/conditions_experiment_example.csv
+!data/.gitkeep
 *.parquet
 *.arrow
 *.feather
