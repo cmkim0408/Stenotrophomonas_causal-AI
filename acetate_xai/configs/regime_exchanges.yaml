@@ -1,0 +1,13 @@
+acetate:
+  - EX_ac_e
+  - EX_acet_e
+  - EX_acetate_e
+oxygen:
+  - EX_o2_e
+ammonium:
+  - EX_nh4_e
+  - EX_nh3_e
+phosphate:
+  - EX_pi_e
+  - EX_p_i_e
+

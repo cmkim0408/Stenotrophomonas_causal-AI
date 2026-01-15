@@ -1,0 +1,9 @@
+Metabolite_ID,Coefficient,Name
+atp_c,54.124831,ATP C10H12N5O13P3
+gtp_c,0.215096,GTP C10H12N5O14P3
+utp_c,0.144104,UTP C9H11N2O15P3
+ctp_c,0.133508,CTP C9H12N3O14P3
+uaagmda_c,0.1,"Undecaprenyl-diphospho-N-acetylmuramoyl-(N-acetylglucosamine)-L-ala-D-glu-meso-2,6-diaminopimeloyl-D-ala-D-ala"
+dctp_c,0.027017,DCTP C9H12N3O13P3
+dgtp_c,0.027017,DGTP C10H12N5O13P3
+datp_c,0.026166,DATP C10H12N5O12P3

@@ -1,0 +1,5 @@
+Step,Status,Biomass_flux,Can_Grow
+1. 무제한 영양소,optimal,63.3722290569998,True
+2. 포도당만 허용,infeasible,0.0,False
+3. Acetate만 허용,optimal,0.0,False
+4. Acetate + CoA demand,optimal,0.0,False

@@ -1,0 +1,8 @@
+Component,Can_Produce,Status,Max_Flux
+atp_c,False,infeasible,0
+nad_c,False,infeasible,0
+coa_c,False,infeasible,0
+ala__L_c,False,infeasible,0
+gly_c,False,infeasible,0
+g6p_c,False,infeasible,0
+pep_c,False,infeasible,0

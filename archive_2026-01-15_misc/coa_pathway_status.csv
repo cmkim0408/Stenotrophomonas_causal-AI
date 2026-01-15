@@ -1,0 +1,7 @@
+Metabolite,Exists,Reaction_Count,Producing_Reactions
+pnto_c,False,0,0
+4ppan_c,True,2,1
+pppcs_c,False,0,0
+pppan_c,False,0,0
+dcoa_c,False,0,0
+coa_c,True,191,74

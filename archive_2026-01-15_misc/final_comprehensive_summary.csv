@@ -1,0 +1,18 @@
+Category,Status
+모델 구조,정상
+Glycolysis,10/10 반응 존재
+TCA Cycle,8/8 반응 존재
+Glyoxylate Shunt,2/2 반응 존재
+PPP,8/8 반응 존재
+무제한 영양소 성장,가능 (63.37 1/h)
+Acetate 기반 성장,불가능
+PEP 생산 (Acetate),불가능
+G6P 생산 (Acetate),불가능
+E4P 생산 (Acetate),불가능
+ATP 생산 (Acetate),불가능
+NADH 생산 (Acetate),불가능
+h_p 생산 (Acetate),가능
+CoA 경로 존재,존재 (대사물질 이름 차이)
+NAD+ 생산,불가능
+THF 생산 (Acetate),불가능
+부트스트랩 성공,ATP 부트스트랩만으로 불가능

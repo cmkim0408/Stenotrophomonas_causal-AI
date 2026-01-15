@@ -1,0 +1,5 @@
+Metabolite,Exists,Reaction_Count,Producing_Reactions
+thf_c,True,9,6
+mlthf_c,True,8,2
+10fthf_c,True,5,1
+dhf_c,True,3,2

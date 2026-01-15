@@ -1,0 +1,7 @@
+Combination,Status,Biomass_Flux,Can_Grow
+{'atp_c': -0.1},optimal,7.340079744115752e-30,False
+"{'atp_c': -0.1, 'coa_c': -0.01}",optimal,7.340079744115752e-30,False
+"{'atp_c': -0.1, 'coa_c': -0.01, 'nad_c': -0.01}",optimal,4.001887241625861e-17,False
+"{'atp_c': -0.1, 'coa_c': -0.01, 'nad_c': -0.01, 'gtp_c': -0.01}",optimal,-1.2527559351231231e-29,False
+"{'atp_c': -0.1, 'coa_c': -0.01, 'nad_c': -0.01, 'gtp_c': -0.01, 'utp_c': -0.01, 'ctp_c': -0.01}",optimal,2.2630935082912573e-31,False
+"{'atp_c': -0.5, 'coa_c': -0.01, 'nad_c': -0.1}",optimal,4.001887241625861e-17,False

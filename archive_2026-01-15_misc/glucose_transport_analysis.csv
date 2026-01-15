@@ -1,0 +1,6 @@
+Transport_ID,Name,Equation,Needs_ATP,Needs_PEP,Lower_Bound,Upper_Bound,Reversible
+GLCabc,D-glucose transport via ABC system,atp_c + glc__D_e + h2o_c --> adp_c + glc__D_c + h_c + pi_c,True,False,0.0,1000.0,False
+GLCabcpp,D-glucose transport via ABC system (periplasm),atp_c + glc__D_p + h2o_c --> adp_c + glc__D_c + h_c + pi_c,True,False,0.0,1000.0,False
+GLCpts,D-glucose transport via PEP:Pyr PTS,glc__D_e + pep_c --> g6p_c + pyr_c,False,True,0.0,1000.0,False
+GLCt2rpp,D-glucose reversible transport via proton symport (periplasm),,False,False,0.0,0.0,False
+GLCtex,Glucose transport via diffusion (extracellular to periplasm),glc__D_e <=> glc__D_p,False,False,-1000.0,1000.0,True

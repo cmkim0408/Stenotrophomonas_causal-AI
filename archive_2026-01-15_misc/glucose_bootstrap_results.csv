@@ -1,0 +1,7 @@
+Strategy,Components,Status,Biomass_Flux,Can_Grow
+ATP만,{'atp_c': -0.1},infeasible,0,False
+PEP만,{'pep_c': -0.1},infeasible,0,False
+ATP + PEP,"{'atp_c': -0.1, 'pep_c': -0.1}",infeasible,0,False
+ATP + CoA,"{'atp_c': -0.1, 'coa_c': -0.01}",infeasible,0,False
+ATP + NAD+,"{'atp_c': -0.1, 'nad_c': -0.01}",infeasible,0,False
+ATP + CoA + NAD+,"{'atp_c': -0.1, 'coa_c': -0.01, 'nad_c': -0.01}",infeasible,0,False

@@ -1,0 +1,21 @@
+.venv/
+__pycache__/
+.pytest_cache/
+*.pyc
+
+*.egg-info/
+build/
+dist/
+
+results/
+data/
+*.parquet
+*.arrow
+*.feather
+
+# Models (we WILL track models/model.xml for server portability)
+models/*
+*.xml
+!models/model.xml
+!models/.gitkeep
+

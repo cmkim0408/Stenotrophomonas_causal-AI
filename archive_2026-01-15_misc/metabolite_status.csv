@@ -1,0 +1,13 @@
+Metabolite_ID,Name,Exists,Reaction_Count,Sample_Reactions
+glc__D_c,Glucose,True,22,"MANE, GLCt2, MLTG5, SUCR, MALT"
+pyr_c,Pyruvate,True,56,"OAADC, ALATA_L, MCITL2, SUCpts, DLYSPYRAT"
+accoa_c,Acetyl-CoA,True,64,"IPPS, KAS8, KAT32, ACACT5r, ACACT8"
+cit_c,Citrate,True,10,"FE3DCITR3, FE3DCITR5, CITt14, CS, CITt_kt"
+icit_c,Isocitrate,True,6,"ICITt_kt, ICDHyr, ICL, ACONT, ICDHx"
+akg_c,α-Ketoglutarate,True,40,"HSTPT, PSERT, GLUDxi, ALATA_L, PHETA1"
+succoa_c,Succinyl-CoA,True,11,"AKGDb, SUCOAS, AKGDH, KGD2, OOR3r"
+succ_c,Succinate,True,17,"MCITL2, SSALx, SHSL2r, SSALy, PPCSCT"
+fum_c,Fumarate,True,11,"ADSL2r, FUM, SUCFUMt, FUMt2_2pp, SUCD"
+mal__L_c,Malate,True,10,"FUM, MALS, MALt2_2, ME1, MALt2_2pp"
+oaa_c,Oxaloacetate,True,12,"OAADC, CS, PPC, MCITS, DMALRED"
+glx_c,Glyoxylate,True,4,"GLYCTO3, MALS, DDPGA, ICL"

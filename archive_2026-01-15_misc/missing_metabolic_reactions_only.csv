@@ -1,0 +1,28 @@
+﻿reaction_id,name,equation,genes,pathway,is_active,max_flux,lower_bound,upper_bound,reversible,priority
+ACS_ADP,,ac_c + atp_c + coa_c <=> accoa_c + adp_c + pi_c,,Acetate Metabolism,True,0.9434482758620704,-1000.0,1000.0,True,HIGH
+PEPCK_ATP,PEP carboxykinase (ATP),atp_c + oaa_c --> adp_c + co2_c + pep_c,,Gluconeogenesis / Glycolysis,True,0.0786206896551722,0.0,1000.0,False,HIGH
+SUCDi,Succinate dehydrogenase,q8_c + succ_c --> fum_c + q8h2_c,,TCA Cycle,True,1.0000000000000016,0.0,1000.0,False,HIGH
+ACKr,,ac_c + atp_c <=> actp_c + adp_c,,Acetate Metabolism,False,0.0,-1000.0,1000.0,True,MEDIUM
+MKRED,menaquinone-8 reduction by NADH,h_c + mqn8_c + nadh_c --> mql8_c + nad_c,,ETC / Electron Transport,False,0.0,0.0,1000.0,False,MEDIUM
+MQN8RD,menaquinone-8 reduction by NADH,h_c + mqn8_c + nadh_c --> mql8_c + nad_c,,ETC / Electron Transport,False,0.0,0.0,1000.0,False,MEDIUM
+MQN8red,Menaquinone-8 NADH dehydrogenase (lumped),h_c + mqn8_c + nadh_c --> mql8_c + nad_c,,ETC / Electron Transport,False,0.0,0.0,0.0,False,MEDIUM
+PC,pyruvate carboxylase,atp_c + hco3_c + pyr_c --> adp_c + h_c + oaa_c + pi_c,,Gluconeogenesis / Glycolysis,False,0.0,0.0,1000.0,False,MEDIUM
+PEPCK,phosphoenolpyruvate carboxykinase (GTP),gtp_c + oaa_c --> co2_c + gdp_c + pep_c,,Gluconeogenesis / Glycolysis,False,0.0,0.0,1000.0,False,MEDIUM
+PPDK,Pyruvate phosphate dikinase,atp_c + pi_c + pyr_c --> amp_c + pep_c + ppi_c,,Gluconeogenesis / Glycolysis,False,0.0,0.0,0.0,False,MEDIUM
+FRD7,Fumarate reductase,fum_c + q8h2_c --> q8_c + succ_c,,TCA Cycle,False,0.0,0.0,1000.0,False,MEDIUM
+IPMDH,,3ippm_c + nad_c --> 4mop_c + co2_c + nadh_c,,TCA Cycle,False,0.0,0.0,1000.0,False,MEDIUM
+FADS,,atp_c + fmn_c --> fad_c + ppi_c,,Cofactor Metabolism,False,0.0,0.0,1000.0,False,LOW
+MQN8r_NADH,,2.0 h_c + mqn8_c + nadh_c --> mql8_c + nad_c,,Cofactor Metabolism,False,0.0,0.0,1000.0,False,LOW
+NADH16_MQ,NDH-1 to MQN8,4.0 h_c + mqn8_c + nadh_c --> 3.0 h_p + mqn8h2_c + nad_c,,Cofactor Metabolism,False,0.0,0.0,1000.0,False,LOW
+SUPPLY_accoa_c,, --> accoa_c,,Cofactor Metabolism,False,0.0,0.0,0.0,False,LOW
+BCAT_LEU,,4mop_c + glu__L_c <=> akg_c + leu__L_c,,Other,False,0.0,-1000.0,1000.0,True,LOW
+BCAT_VAL,,2kiv_c + glu__L_c <=> akg_c + val__L_c,,Other,False,0.0,-1000.0,1000.0,True,LOW
+CA,carbonic anhydrase,co2_c + h2o_c <=> h_c + hco3_c,,Other,False,0.0,-1000.0,1000.0,True,LOW
+DHAD,,dhiv_c --> 2kiv_c + h2o_c,,Other,False,0.0,0.0,1000.0,False,LOW
+IPMI,,2ippm_c <=> 3ippm_c,,Other,False,0.0,-1000.0,1000.0,True,LOW
+KARI,,alac__S_c + h_c + nadph_c --> dhiv_c + nadp_c,,Other,False,0.0,0.0,1000.0,False,LOW
+MKOX,menaquinol-8 oxidation (pseudo),mql8_c + nad_c --> h_c + mqn8_c + nadh_c,,Other,False,0.0,0.0,1000.0,False,LOW
+PDXK,,atp_c + pydxn_c --> adp_c + h_c + pydx5p_c,,Other,False,0.0,0.0,1000.0,False,LOW
+RIBFLVKin,,atp_c + ribflv_c --> adp_c + fmn_c + h_c,,Other,False,0.0,0.0,1000.0,False,LOW
+SUPPLY_oaa_c,, --> oaa_c,,Other,False,0.0,0.0,0.0,False,LOW
+THIK,,atp_c + thm_c --> adp_c + h_c + thmpp_c,,Other,False,0.0,0.0,1000.0,False,LOW

@@ -1,0 +1,10 @@
+항목,상태
+모델 구조,정상
+Glycolysis,10/10 반응 존재
+TCA Cycle,8/8 반응 존재
+Glyoxylate Shunt,2/2 반응 존재
+무제한 영양소 성장,가능 (63.37 1/h)
+포도당 기반 성장,불가 (infeasible)
+Acetate 기반 성장,불가 (flux=0)
+뉴클레오티드 생산,경로 문제
+CoA 생산,부트스트랩 필요

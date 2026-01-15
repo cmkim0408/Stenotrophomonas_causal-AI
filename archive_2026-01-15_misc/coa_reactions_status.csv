@@ -1,0 +1,6 @@
+Reaction_ID,Expected_Equation,Expected_Gene,Exists,Actual_Equation,GPR,Gene_Match
+PNTO,atp_c + pnto_c --> adp_c + 4ppan_c,Smlt0283,False,,,False
+PPCS,atp_c + 4ppan_c + cys__L_c --> adp_c + pi_c + pppcs_c,Smlt0401,False,,,False
+PPCDC,pppcs_c --> co2_c + pppan_c,Smlt0401,True,4ppcys_c + h_c --> co2_c + pan4p_c,FAGFNPBA_00328,False
+PPAT,atp_c + pppan_c --> ppi_c + dcoa_c,Smlt1811,False,,,False
+DPCOAK,atp_c + dcoa_c --> adp_c + coa_c,Smlt3761,True,atp_c + dpcoa_c --> adp_c + coa_c + h_c,FAGFNPBA_03263,False

@@ -1,0 +1,21 @@
+Amino_Acid_ID,Name,Pathway,Exists,Total_Reactions,Producing_Reactions,Can_Produce
+ala__L_c,Alanine,Pyruvate,True,22,16,True
+arg__L_c,Arginine,Glutamate,True,13,7,True
+asn__L_c,Asparagine,Aspartate,True,6,4,True
+asp__L_c,Aspartic acid,Oxaloacetate,True,21,10,True
+cys__L_c,Cysteine,Serine,True,19,11,True
+gln__L_c,Glutamine,Glutamate,True,19,5,True
+glu__L_c,Glutamic acid,α-Ketoglutarate,True,69,48,True
+gly_c,Glycine,Serine,True,30,22,True
+his__L_c,Histidine,PRPP,True,5,3,True
+ile__L_c,Isoleucine,Threonine,True,5,2,True
+leu__L_c,Leucine,Pyruvate,True,8,4,True
+lys__L_c,Lysine,Aspartate,True,10,5,True
+met__L_c,Methionine,Aspartate,True,17,12,True
+phe__L_c,Phenylalanine,Chorismate,True,6,3,True
+pro__L_c,Proline,Glutamate,True,11,7,True
+ser__L_c,Serine,3-Phosphoglycerate,True,17,3,True
+thr__L_c,Threonine,Aspartate,True,9,4,True
+trp__L_c,Tryptophan,Chorismate,True,5,3,True
+tyr__L_c,Tyrosine,Chorismate,True,5,2,True
+val__L_c,Valine,Pyruvate,True,8,4,True

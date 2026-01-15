@@ -1,0 +1,89 @@
+anchors:
+  # Exchanges / uptake (limiters)
+  - name: acetate exchange
+    keywords: ["EX_ac", "acetate exchange", "EX_ac_e", "EX_ac(e)"]
+  - name: acetate transport
+    keywords: ["acetate transport", "ACt", "actp", "acetate permease"]
+  - name: oxygen exchange
+    keywords: ["EX_o2", "oxygen exchange", "EX_o2_e", "EX_o2(e)"]
+  - name: ammonium exchange
+    keywords: ["EX_nh4", "ammonium exchange", "EX_nh4_e", "EX_nh4(e)"]
+  - name: phosphate exchange
+    keywords: ["EX_pi", "phosphate exchange", "EX_pi_e", "EX_pi(e)"]
+  - name: proton exchange
+    keywords: ["EX_h", "proton exchange", "EX_h_e", "EX_h(e)"]
+  - name: carbon dioxide exchange
+    keywords: ["EX_co2", "carbon dioxide exchange", "EX_co2_e", "EX_co2(e)"]
+
+  # Maintenance / energy
+  - name: ATP maintenance
+    keywords: ["ATPM", "maintenance"]
+  - name: ATP synthase
+    keywords: ["ATPS", "ATP synthase", "atp synthase"]
+  - name: adenylate kinase
+    keywords: ["ADK", "adenylate kinase"]
+  - name: nucleoside diphosphate kinase
+    keywords: ["ndk", "nucleoside diphosphate kinase"]
+
+  # Acetate -> acetyl-CoA
+  - name: acetyl-CoA synthetase
+    keywords: ["acetyl-coa synthetase", "ACS", "acs"]
+  - name: acetate kinase
+    keywords: ["acetate kinase", "ACK", "ackA"]
+  - name: phosphotransacetylase
+    keywords: ["phosphotransacetylase", "PTA", "pta"]
+  - name: pyrophosphatase
+    keywords: ["pyrophosphatase", "PPase", "ppi"]
+
+  # Glyoxylate shunt / TCA core
+  - name: citrate synthase
+    keywords: ["citrate synthase", "CS", "gltA"]
+  - name: aconitase
+    keywords: ["aconitase", "ACONT"]
+  - name: isocitrate dehydrogenase
+    keywords: ["isocitrate dehydrogenase", "ICDH", "icd"]
+  - name: isocitrate lyase
+    keywords: ["isocitrate lyase", "ICL", "aceA"]
+  - name: malate synthase
+    keywords: ["malate synthase", "MALS", "aceB", "glcB"]
+  - name: malate dehydrogenase
+    keywords: ["malate dehydrogenase", "MDH", "mdh"]
+  - name: fumarase
+    keywords: ["fumarase", "FUM"]
+  - name: succinate dehydrogenase
+    keywords: ["succinate dehydrogenase", "SDH"]
+
+  # Anaplerosis / gluconeogenesis
+  - name: pep carboxylase
+    keywords: ["PEP carboxylase", "PPC", "ppc"]
+  - name: pep synthase
+    keywords: ["PEP synthase", "PPS", "ppsA"]
+  - name: pep carboxykinase
+    keywords: ["PEP carboxykinase", "PCK", "pck"]
+  - name: pyruvate kinase
+    keywords: ["pyruvate kinase", "PYK"]
+  - name: enolase
+    keywords: ["enolase", "ENO"]
+  - name: fructose-bisphosphatase
+    keywords: ["fructose-bisphosphatase", "FBPase"]
+
+  # Respiration (oxygen-linked efficiency)
+  - name: NADH dehydrogenase I
+    keywords: ["NADH dehydrogenase I", "NDH-1", "nuo"]
+  - name: NADH dehydrogenase II
+    keywords: ["NADH dehydrogenase II", "NDH-2", "ndh"]
+  - name: cytochrome bo3 oxidase
+    keywords: ["cytochrome bo3", "cyo"]
+  - name: cytochrome bd oxidase
+    keywords: ["cytochrome bd", "cyd"]
+
+  # Nitrogen assimilation (ties to NH4 gradient)
+  - name: ammonium transport
+    keywords: ["ammonium transport", "NH4t", "AMMt"]
+  - name: glutamine synthetase
+    keywords: ["glutamine synthetase", "GS", "glnA"]
+  - name: glutamate synthase
+    keywords: ["glutamate synthase", "GOGAT", "gltB", "gltD"]
+  - name: glutamate dehydrogenase
+    keywords: ["glutamate dehydrogenase", "GDH", "gdhA"]
+

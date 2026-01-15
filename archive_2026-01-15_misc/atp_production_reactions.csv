@@ -1,0 +1,4 @@
+Reaction_ID,Name,Reactants,Products,Reversible,GPR
+PPAKr,Propionate kinase,"adp_c, ppap_c","atp_c, ppa_c",True,FAGFNPBA_03244
+ATPS4rpp,ATP synthase (four protons for one ATP) (periplasm),"adp_c, h_p, pi_c","atp_c, h2o_c, h_c",True,(FAGFNPBA_03597 and FAGFNPBA_03598 and FAGFNPBA_03599 and FAGFNPBA_03600 and FAGFNPBA_03602 and FAGFNPBA_03604) or (FAGFNPBA_03598 and FAGFNPBA_03599 and FAGFNPBA_03600 and FAGFNPBA_03601 and FAGFNPBA_03602 and FAGFNPBA_03604) or (FAGFNPBA_03597 and FAGFNPBA_03598 and FAGFNPBA_03599 and FAGFNPBA_03600 and FAGFNPBA_03601 and FAGFNPBA_03602 and FAGFNPBA_03604) or (FAGFNPBA_03597 and FAGFNPBA_03598 and FAGFNPBA_03599 and FAGFNPBA_03600 and FAGFNPBA_03601 and FAGFNPBA_03602 and FAGFNPBA_03603 and FAGFNPBA_03604)
+PYK,Pyruvate kinase,"adp_c, h_c, pep_c","atp_c, pyr_c",False,FAGFNPBA_00941 or FAGFNPBA_03304

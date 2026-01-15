@@ -1,0 +1,5 @@
+Gene_ID,Name,EC,Expected_Reaction,Exists,Connected_Reactions,Reaction_IDs
+Smlt0283,pantothenate kinase,EC:2.7.1.33,PNTO,False,0,
+Smlt0401,dfp (pantothenate biosynthesis protein),EC:4.1.1.36 6.3.2.5,"PPCS, PPCDC",False,0,
+Smlt1811,coaD (phosphopantetheine adenylyltransferase),EC:2.7.7.3,PPAT,False,0,
+Smlt3761,coaE (dephospho-CoA kinase),EC:2.7.1.24,DPCOAK,False,0,

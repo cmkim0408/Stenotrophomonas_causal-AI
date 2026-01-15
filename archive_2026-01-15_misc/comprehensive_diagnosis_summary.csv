@@ -1,0 +1,20 @@
+Category,Status,Can_Produce_Glucose
+모델 구조,정상,가능
+Glycolysis,10/10 반응 존재,N/A
+TCA Cycle,8/8 반응 존재,N/A
+Glyoxylate Shunt,2/2 반응 존재,N/A
+무제한 영양소 성장,가능 (63.37 1/h),가능
+Purine 생합성,부분적 (경로 존재),불가능
+Pyrimidine 생합성,부분적 (경로 존재),불가능
+ATP 생산,생산 불가,불가능
+아미노산 생합성 (전체),부분적 (일부 경로 누락),불가능
+Serine pathway,1/3 반응 존재,불가능
+Glycine pathway,0/2 반응 존재,불가능
+Branched-chain AA,5/5 반응 존재,불가능
+Proline pathway,2/2 반응 존재,불가능
+Aromatic AA,1/5 반응 존재,불가능
+Aspartate family,4/6 반응 존재,불가능
+CoA 생산 경로,2/5 반응 존재,불가능
+NAD+/NADP+ 경로,3/5 반응 존재,불가능
+FAD 경로,2/2 반응 존재,불가능
+보조인자 생산 (전체),생산 불가,불가능

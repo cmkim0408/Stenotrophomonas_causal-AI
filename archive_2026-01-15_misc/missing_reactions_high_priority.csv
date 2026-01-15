@@ -1,0 +1,8 @@
+Category,Reaction_ID,Alternative_IDs,Name,Equation,Pathway,Notes,Priority
+CoA Pathway,PNTO,PNTOt2rpp (transport만 있음),Pantothenate kinase,atp_c + pnto_c --> adp_c + 4ppan_c,Pantothenate -> 4'-Phosphopantothenate,PNTOt2rpp는 transport만 있고 kinase 없음,High
+CoA Pathway,PPCS,없음 (유사: PPCSCT는 다른 반응),4-phosphopantothenoylcysteine synthetase,atp_c + 4ppan_c + cys__L_c --> adp_c + pi_c + pppcs_c,4'-Phosphopantothenate -> 4'-Phosphopantothenoylcysteine,PPCSCT는 Propanoyl-CoA transferase로 다른 반응,High
+CoA Pathway,PPAT,APPAT (유사하지만 pan4p_c 사용),Phosphopantetheine adenylyltransferase,atp_c + pppan_c --> ppi_c + dcoa_c,4'-Phosphopantetheine -> Dephospho-CoA,APPAT는 pan4p_c를 사용하는 다른 반응,High
+Amino Acid (Glycine),SHMT,없음,Serine hydroxymethyltransferase,ser__L_c + thf_c --> gly_c + mlthf_c + h2o_c,Glycine pathway (Serine -> Glycine),Glycine 생합성 주요 경로,High
+Amino Acid (Aromatic),DAHPS,"없음 (AROAT, AROH는 다른 단계)",3-deoxy-7-phosphoheptulonate synthase,e4p_c + pep_c --> dah7p_c + pi_c + h2o_c,Aromatic AA (Erythrose-4-P + PEP -> DAHP),Aromatic AA 생합성 첫 단계,High
+Amino Acid (Aspartate family),HOM,없음,Homoserine dehydrogenase,aspartate_semialdehyde_c + nadph_c + h_c --> hom__L_c + nadp_c + h2o_c,Aspartate family (Aspartate semialdehyde -> Homoserine),Homoserine 생합성 경로,High
+Amino Acid (Aspartate family),LYSS,없음,Lysine synthase / Diaminopimelate pathway,meso_dap_c --> lys__L_c + succ_c,Aspartate family (meso-Diaminopimelate -> Lysine),Lysine 생합성 경로,High

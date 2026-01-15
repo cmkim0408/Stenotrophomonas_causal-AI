@@ -1,0 +1,13 @@
+Reaction_ID,Name,Exists,Reversible,Equation
+PPS,Phosphoenolpyruvate synthase,True,False,atp_c + h2o_c + pyr_c --> amp_c + 2.0 h_c + pep_c + pi_c
+PEPCK,Phosphoenolpyruvate carboxykinase,False,False,
+PC,Pyruvate carboxylase,False,False,
+ENO,Enolase,True,True,2pg_c <=> h2o_c + pep_c
+PGM,Phosphoglycerate mutase,True,True,2pg_c <=> 3pg_c
+PGK,Phosphoglycerate kinase,True,True,3pg_c + atp_c <=> 13dpg_c + adp_c
+GAPD,Glyceraldehyde-3-phosphate dehydrogenase,True,True,g3p_c + nad_c + pi_c <=> 13dpg_c + h_c + nadh_c
+TPI,Triosephosphate isomerase,True,True,dhap_c <=> g3p_c
+FBA,Fructose-bisphosphate aldolase,True,True,fdp_c <=> dhap_c + g3p_c
+FBP,"Fructose-1,6-bisphosphatase",True,False,fdp_c + h2o_c --> f6p_c + pi_c
+PGI,Phosphoglucose isomerase,True,True,g6p_c <=> f6p_c
+HEX1,Hexokinase (역반응),True,False,atp_c + glc__D_c --> adp_c + g6p_c + h_c

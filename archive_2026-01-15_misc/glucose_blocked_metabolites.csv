@@ -1,0 +1,13 @@
+﻿Metabolite_ID,Name,Status,Max_Flux
+atp_c,ATP,infeasible,0
+nad_c,NAD+,infeasible,0
+nadh_c,NADH,infeasible,0
+coa_c,CoA,infeasible,0
+pep_c,PEP,infeasible,0
+g6p_c,Glucose-6-phosphate,infeasible,0
+h_p,Proton motive force,infeasible,0
+imp_c,IMP (Purine),infeasible,0
+ump_c,UMP (Pyrimidine),infeasible,0
+ala__L_c,Alanine,infeasible,0
+gly_c,Glycine,infeasible,0
+ser__L_c,Serine,infeasible,0

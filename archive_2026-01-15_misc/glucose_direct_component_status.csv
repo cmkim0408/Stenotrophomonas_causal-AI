@@ -1,0 +1,10 @@
+Component,Metabolite_ID,Can_Produce,Status,Max_Flux
+ATP,atp_c,False,infeasible,0.0
+NAD+,nad_c,False,infeasible,0.0
+NADH,nadh_c,False,infeasible,0.0
+CoA,coa_c,False,infeasible,0.0
+PEP,pep_c,False,infeasible,0.0
+Glucose-6-phosphate,g6p_c,False,infeasible,0.0
+Pyruvate,pyr_c,True,optimal,1000.0
+Acetyl-CoA,accoa_c,True,optimal,1000.0
+Proton motive force,h_p,False,infeasible,0.0

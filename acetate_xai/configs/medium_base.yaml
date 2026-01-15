@@ -1,0 +1,51 @@
+# Base medium + condition->uptake scaling config (initial version)
+#
+# Convention (COBRA):
+# - Exchange uptake is typically represented by a NEGATIVE lower bound.
+#   Example: to allow max uptake of 10, set EX_ac_e.lower_bound = -10.
+#
+# This config intentionally keeps scaling simple (concentration -> max uptake).
+# We'll refine with calibration once we start matching to experimental OD/fluxes.
+
+exchanges:
+  acetate: "EX_ac_e"
+  ammonium: "EX_nh4_e"
+  oxygen: "EX_o2_e"
+  phosphate: "EX_pi_e"
+  sulfate: "EX_so4_e"
+  sodium: "EX_na1_e"
+  chloride: "EX_cl_e"
+  proton: "EX_h_e"
+  water: "EX_h2o_e"
+  carbon_dioxide: "EX_co2_e"
+
+# Default bounds applied before condition-specific scaling.
+# Use null to skip touching that bound.
+base_bounds:
+  EX_o2_e: { lb: -20.0, ub: 1000.0 }
+  EX_pi_e: { lb: -10.0, ub: 1000.0 }
+  EX_so4_e: { lb: -10.0, ub: 1000.0 }
+  EX_na1_e: { lb: -1000.0, ub: 1000.0 }
+  EX_cl_e: { lb: -1000.0, ub: 1000.0 }
+  EX_h_e: { lb: -1000.0, ub: 1000.0 }
+  EX_h2o_e: { lb: -1000.0, ub: 1000.0 }
+  EX_co2_e: { lb: -1000.0, ub: 1000.0 }
+
+scaling:
+  # acetate_mM -> acetate_uptake_max = k_ac * acetate_mM
+  k_ac: 0.10
+  # nh4cl_gL -> nh4_uptake_max = k_nh4 * nh4cl_gL
+  k_nh4: 10.0
+
+yeast_extract:
+  # Initial handling: only a toggle and (optional) open some exchanges.
+  enabled_if_gL_gt: 0.0
+  open_exchanges_when_enabled:
+    # These are placeholders; you can adapt once we inspect your model's exchange IDs.
+    # Examples: vitamins/cofactors that YE might supply
+    - "EX_btn_e"   # biotin
+    - "EX_thm_e"   # thiamine
+    - "EX_ribflv_e" # riboflavin
+    - "EX_fol_e"   # folate
+  open_uptake_lb: -1.0
+

@@ -1,0 +1,2 @@
+biomass_flux,growth_ok,energy_loop_ok,blocked_count,total_reactions,total_metabolites,total_genes,compartments,exchange_reactions,reactions_with_gpr,reactions_without_gpr,gpr_coverage,reversible_reactions,irreversible_reactions
+0,False,True,54,2081,1359,932,3,218,1608,473,77.27054300816914,731,1350

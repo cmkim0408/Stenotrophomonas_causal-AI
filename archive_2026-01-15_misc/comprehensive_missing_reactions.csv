@@ -1,0 +1,115 @@
+﻿reaction_id,name,equation,genes,pathway,is_active,max_flux,lower_bound,upper_bound,reversible,priority
+T_o2_e_to_o2_c,,o2_e <=> o2_c,,Transport,True,2.000000000000004,-1000.0,1000.0,True,HIGH
+EX_hco3_e,Bicarbonate exchange,hco3_e <=> ,,Exchange,True,1.0000000000000118,-1000.0,1000.0,True,HIGH
+T_hco3_e_to_c,,hco3_e <=> hco3_c,,Transport,True,1.0000000000000118,-1000.0,1000.0,True,HIGH
+SUCDi,Succinate dehydrogenase,q8_c + succ_c --> fum_c + q8h2_c,,TCA Cycle,True,1.0000000000000016,0.0,1000.0,False,HIGH
+ACtexi,Acetate transport (e<->c),ac_e <=> ac_c,,Transport,True,1.0,-1000.0,1000.0,True,HIGH
+ACS_ADP,,ac_c + atp_c + coa_c <=> accoa_c + adp_c + pi_c,,Acetate Metabolism,True,0.9434482758620704,-1000.0,1000.0,True,HIGH
+T_nh4_e_to_nh4_c,,nh4_e <=> nh4_c,,Transport,True,0.104827586206899,-1000.0,1000.0,True,HIGH
+PEPCK_ATP,PEP carboxykinase (ATP),atp_c + oaa_c --> adp_c + co2_c + pep_c,,Gluconeogenesis / Glycolysis,True,0.0786206896551722,0.0,1000.0,False,HIGH
+T_fe3_e_to_fe3_c,,fe3_e <=> fe3_c,,Transport,True,0.017931034482761,-1000.0,1000.0,True,MEDIUM
+ACKr,,ac_c + atp_c <=> actp_c + adp_c,,Acetate Metabolism,False,0.0,-1000.0,1000.0,True,MEDIUM
+MKRED,menaquinone-8 reduction by NADH,h_c + mqn8_c + nadh_c --> mql8_c + nad_c,,ETC / Electron Transport,False,0.0,0.0,1000.0,False,MEDIUM
+MQN8RD,menaquinone-8 reduction by NADH,h_c + mqn8_c + nadh_c --> mql8_c + nad_c,,ETC / Electron Transport,False,0.0,0.0,1000.0,False,MEDIUM
+MQN8red,Menaquinone-8 NADH dehydrogenase (lumped),h_c + mqn8_c + nadh_c --> mql8_c + nad_c,,ETC / Electron Transport,False,0.0,0.0,0.0,False,MEDIUM
+EX_btn_e,btn_e exchange,btn_e <=> ,,Exchange,False,0.0,-1000.0,1000.0,True,MEDIUM
+EX_coa_e,coa_e exchange,coa_e --> ,,Exchange,False,0.0,0.0,0.0,False,MEDIUM
+EX_fol_e,fol_e exchange,fol_e <=> ,,Exchange,False,0.0,-1000.0,1000.0,True,MEDIUM
+EX_lipoate_e,lipoate_e exchange,lipoate_e <=> ,,Exchange,False,0.0,-1000.0,1000.0,True,MEDIUM
+EX_mqn8_e,menaquinone-8 exchange,mqn8_e <=> ,,Exchange,False,0.0,-1000.0,1000.0,True,MEDIUM
+EX_nac_e,nac_e exchange,nac_e <=> ,,Exchange,False,0.0,-1000.0,1000.0,True,MEDIUM
+EX_ncam_e,ncam_e exchange,ncam_e <=> ,,Exchange,False,0.0,-1000.0,1000.0,True,MEDIUM
+EX_pnto__R_e,pnto__R_e exchange,pnto__R_e <=> ,,Exchange,False,0.0,-1000.0,1000.0,True,MEDIUM
+EX_q8_e,ubiquinone-8 exchange,q8_e <=> ,,Exchange,False,0.0,-1000.0,1000.0,True,MEDIUM
+EX_ribflv_e,ribflv_e exchange,ribflv_e <=> ,,Exchange,False,0.0,-1000.0,1000.0,True,MEDIUM
+EX_thm_e,thm_e exchange,thm_e <=> ,,Exchange,False,0.0,-1000.0,1000.0,True,MEDIUM
+PC,pyruvate carboxylase,atp_c + hco3_c + pyr_c --> adp_c + h_c + oaa_c + pi_c,,Gluconeogenesis / Glycolysis,False,0.0,0.0,1000.0,False,MEDIUM
+PEPCK,phosphoenolpyruvate carboxykinase (GTP),gtp_c + oaa_c --> co2_c + gdp_c + pep_c,,Gluconeogenesis / Glycolysis,False,0.0,0.0,1000.0,False,MEDIUM
+PPDK,Pyruvate phosphate dikinase,atp_c + pi_c + pyr_c --> amp_c + pep_c + ppi_c,,Gluconeogenesis / Glycolysis,False,0.0,0.0,0.0,False,MEDIUM
+FRD7,Fumarate reductase,fum_c + q8h2_c --> q8_c + succ_c,,TCA Cycle,False,0.0,0.0,1000.0,False,MEDIUM
+IPMDH,,3ippm_c + nad_c --> 4mop_c + co2_c + nadh_c,,TCA Cycle,False,0.0,0.0,1000.0,False,MEDIUM
+T_ac_e_to_ac_c,,ac_e <=> ac_c,,Transport,False,0.0,-1000.0,1000.0,True,MEDIUM
+T_acac_e_to_acac_c,,acac_e <=> acac_c,,Transport,False,0.0,-1000.0,1000.0,True,MEDIUM
+T_acald_e_to_acald_c,,acald_e <=> acald_c,,Transport,False,0.0,-1000.0,1000.0,True,MEDIUM
+T_ala__L_e_to_ala__L_c,,ala__L_e <=> ala__L_c,,Transport,False,0.0,-1000.0,1000.0,True,MEDIUM
+T_arg__L_e_to_arg__L_c,,arg__L_e <=> arg__L_c,,Transport,False,0.0,-1000.0,1000.0,True,MEDIUM
+T_asn__L_e_to_asn__L_c,,asn__L_e <=> asn__L_c,,Transport,False,0.0,-1000.0,1000.0,True,MEDIUM
+T_asp__L_e_to_asp__L_c,,asp__L_e <=> asp__L_c,,Transport,False,0.0,-1000.0,1000.0,True,MEDIUM
+T_btn_e_to_btn_c,,btn_e <=> btn_c,,Transport,False,0.0,-1000.0,1000.0,True,MEDIUM
+T_btn_e_to_c,,btn_e <=> btnc,,Transport,False,0.0,-1000.0,1000.0,True,MEDIUM
+T_ca2_e_to_ca2_c,,ca2_e <=> ca2_c,,Transport,False,0.0,-1000.0,1000.0,True,MEDIUM
+T_cl_e_to_cl_c,,cl_e <=> cl_c,,Transport,False,0.0,-1000.0,1000.0,True,MEDIUM
+T_co2_e_to_c,,co2_e <=> co2_c,,Transport,False,0.0,-1000.0,1000.0,True,MEDIUM
+T_co2_e_to_co2_c,,co2_e <=> co2_c,,Transport,False,0.0,-1000.0,1000.0,True,MEDIUM
+T_coa_e_to_c,,coa_e <=> coac,,Transport,False,0.0,-1000.0,1000.0,True,MEDIUM
+T_coa_e_to_coa_c,,coa_e --> coa_c,,Transport,False,0.0,0.0,0.0,False,MEDIUM
+T_cobalt2_e_to_c,,cobalt2_e <=> cobalt2_c,,Transport,False,0.0,-1000.0,1000.0,True,MEDIUM
+T_cobalt2_e_to_cobalt2_c,,cobalt2_e <=> cobalt2_c,,Transport,False,0.0,-1000.0,1000.0,True,MEDIUM
+T_cu2_e_to_c,,cu2_e <=> cu2_c,,Transport,False,0.0,-1000.0,1000.0,True,MEDIUM
+T_cu2_e_to_cu2_c,,cu2_e <=> cu2_c,,Transport,False,0.0,-1000.0,1000.0,True,MEDIUM
+T_cys__L_e_to_cys__L_c,,cys__L_e <=> cys__L_c,,Transport,False,0.0,-1000.0,1000.0,True,MEDIUM
+T_etoh_e_to_etoh_c,,etoh_e <=> etoh_c,,Transport,False,0.0,-1000.0,1000.0,True,MEDIUM
+T_fe2_e_to_fe2_c,,fe2_e <=> fe2_c,,Transport,False,0.0,-1000.0,1000.0,True,MEDIUM
+T_fol_e_to_c,,fol_e <=> folc,,Transport,False,0.0,-1000.0,1000.0,True,MEDIUM
+T_fol_e_to_fol_c,,fol_e <=> fol_c,,Transport,False,0.0,-1000.0,1000.0,True,MEDIUM
+T_gln__L_e_to_gln__L_c,,gln__L_e <=> gln__L_c,,Transport,False,0.0,-1000.0,1000.0,True,MEDIUM
+T_glu__L_e_to_glu__L_c,,glu__L_e <=> glu__L_c,,Transport,False,0.0,-1000.0,1000.0,True,MEDIUM
+T_gly_e_to_gly_c,,gly_e <=> gly_c,,Transport,False,0.0,-1000.0,1000.0,True,MEDIUM
+T_gua_e_to_gua_c,,gua_e <=> gua_c,,Transport,False,0.0,-1000.0,1000.0,True,MEDIUM
+T_h2o_e_to_h2o_c,,h2o_e <=> h2o_c,,Transport,False,0.0,-1000.0,1000.0,True,MEDIUM
+T_h_e_to_h_c,,h_e <=> h_c,,Transport,False,0.0,-1000.0,1000.0,True,MEDIUM
+T_hco3_e_to_hco3_c,,hco3_e <=> hco3_c,,Transport,False,0.0,-1000.0,1000.0,True,MEDIUM
+T_his__L_e_to_his__L_c,,his__L_e <=> his__L_c,,Transport,False,0.0,-1000.0,1000.0,True,MEDIUM
+T_ile__L_e_to_ile__L_c,,ile__L_e <=> ile__L_c,,Transport,False,0.0,-1000.0,1000.0,True,MEDIUM
+T_k_e_to_k_c,,k_e <=> k_c,,Transport,False,0.0,-1000.0,1000.0,True,MEDIUM
+T_leu__L_e_to_leu__L_c,,leu__L_e <=> leu__L_c,,Transport,False,0.0,-1000.0,1000.0,True,MEDIUM
+T_lipoate_e_to_c,,lipoate_e <=> lipoatec,,Transport,False,0.0,-1000.0,1000.0,True,MEDIUM
+T_lipoate_e_to_lipoate_c,,lipoate_e <=> lipoate_c,,Transport,False,0.0,-1000.0,1000.0,True,MEDIUM
+T_lys__L_e_to_lys__L_c,,lys__L_e <=> lys__L_c,,Transport,False,0.0,-1000.0,1000.0,True,MEDIUM
+T_met__L_e_to_met__L_c,,met__L_e <=> met__L_c,,Transport,False,0.0,-1000.0,1000.0,True,MEDIUM
+T_mg2_e_to_mg2_c,,mg2_e <=> mg2_c,,Transport,False,0.0,-1000.0,1000.0,True,MEDIUM
+T_mn2_e_to_mn2_c,,mn2_e <=> mn2_c,,Transport,False,0.0,-1000.0,1000.0,True,MEDIUM
+T_mobd_e_to_mobd_c,,mobd_e <=> mobd_c,,Transport,False,0.0,-1000.0,1000.0,True,MEDIUM
+T_mqn8_e_to_c,,mqn8_e <=> mqn8c,,Transport,False,0.0,-1000.0,1000.0,True,MEDIUM
+T_mqn8_e_to_mqn8_c,,mqn8_e <=> mqn8_c,,Transport,False,0.0,-1000.0,1000.0,True,MEDIUM
+T_na1_e_to_na1_c,,na1_e <=> na1_c,,Transport,False,0.0,-1000.0,1000.0,True,MEDIUM
+T_nac_e_to_c,,nac_e <=> nacc,,Transport,False,0.0,-1000.0,1000.0,True,MEDIUM
+T_nac_e_to_nac_c,,nac_e <=> nac_c,,Transport,False,0.0,-1000.0,1000.0,True,MEDIUM
+T_ncam_e_to_c,,ncam_e <=> ncamc,,Transport,False,0.0,-1000.0,1000.0,True,MEDIUM
+T_ncam_e_to_ncam_c,,ncam_e <=> ncam_c,,Transport,False,0.0,-1000.0,1000.0,True,MEDIUM
+T_ni2_e_to_ni2_c,,ni2_e <=> ni2_c,,Transport,False,0.0,-1000.0,1000.0,True,MEDIUM
+T_phe__L_e_to_phe__L_c,,phe__L_e <=> phe__L_c,,Transport,False,0.0,-1000.0,1000.0,True,MEDIUM
+T_pi_e_to_pi_c,,pi_e <=> pi_c,,Transport,False,0.0,-1000.0,1000.0,True,MEDIUM
+T_pnto__R_e_to_c,,pnto__R_e <=> pnto__Rc,,Transport,False,0.0,-1000.0,1000.0,True,MEDIUM
+T_pnto__R_e_to_pnto__R_c,,pnto__R_e <=> pnto__R_c,,Transport,False,0.0,-1000.0,1000.0,True,MEDIUM
+T_pro__L_e_to_pro__L_c,,pro__L_e <=> pro__L_c,,Transport,False,0.0,-1000.0,1000.0,True,MEDIUM
+T_pydxn_e_to_pydxn_c,,pydxn_e <=> pydxn_c,,Transport,False,0.0,-1000.0,1000.0,True,MEDIUM
+T_q8_e_to_c,,q8_e <=> q8c,,Transport,False,0.0,-1000.0,1000.0,True,MEDIUM
+T_q8_e_to_q8_c,,q8_e <=> q8_c,,Transport,False,0.0,-1000.0,1000.0,True,MEDIUM
+T_ribflv_e_to_c,,ribflv_e <=> ribflvc,,Transport,False,0.0,-1000.0,1000.0,True,MEDIUM
+T_ribflv_e_to_ribflv_c,,ribflv_e <=> ribflv_c,,Transport,False,0.0,-1000.0,1000.0,True,MEDIUM
+T_s_e_to_s_c,,s_e <=> s_c,,Transport,False,0.0,-1000.0,1000.0,True,MEDIUM
+T_ser__L_e_to_ser__L_c,,ser__L_e <=> ser__L_c,,Transport,False,0.0,-1000.0,1000.0,True,MEDIUM
+T_so4_e_to_so4_c,,so4_e <=> so4_c,,Transport,False,0.0,-1000.0,1000.0,True,MEDIUM
+T_thm_e_to_c,,thm_e <=> thmc,,Transport,False,0.0,-1000.0,1000.0,True,MEDIUM
+T_thm_e_to_thm_c,,thm_e <=> thm_c,,Transport,False,0.0,-1000.0,1000.0,True,MEDIUM
+T_thr__L_e_to_thr__L_c,,thr__L_e <=> thr__L_c,,Transport,False,0.0,-1000.0,1000.0,True,MEDIUM
+T_trp__L_e_to_trp__L_c,,trp__L_e <=> trp__L_c,,Transport,False,0.0,-1000.0,1000.0,True,MEDIUM
+T_tyr__L_e_to_tyr__L_c,,tyr__L_e <=> tyr__L_c,,Transport,False,0.0,-1000.0,1000.0,True,MEDIUM
+T_val__L_e_to_val__L_c,,val__L_e <=> val__L_c,,Transport,False,0.0,-1000.0,1000.0,True,MEDIUM
+T_zn2_e_to_zn2_c,,zn2_e <=> zn2_c,,Transport,False,0.0,-1000.0,1000.0,True,MEDIUM
+FADS,,atp_c + fmn_c --> fad_c + ppi_c,,Cofactor Metabolism,False,0.0,0.0,1000.0,False,LOW
+MQN8r_NADH,,2.0 h_c + mqn8_c + nadh_c --> mql8_c + nad_c,,Cofactor Metabolism,False,0.0,0.0,1000.0,False,LOW
+NADH16_MQ,NDH-1 to MQN8,4.0 h_c + mqn8_c + nadh_c --> 3.0 h_p + mqn8h2_c + nad_c,,Cofactor Metabolism,False,0.0,0.0,1000.0,False,LOW
+SUPPLY_accoa_c,, --> accoa_c,,Cofactor Metabolism,False,0.0,0.0,0.0,False,LOW
+BCAT_LEU,,4mop_c + glu__L_c <=> akg_c + leu__L_c,,Other,False,0.0,-1000.0,1000.0,True,LOW
+BCAT_VAL,,2kiv_c + glu__L_c <=> akg_c + val__L_c,,Other,False,0.0,-1000.0,1000.0,True,LOW
+CA,carbonic anhydrase,co2_c + h2o_c <=> h_c + hco3_c,,Other,False,0.0,-1000.0,1000.0,True,LOW
+DHAD,,dhiv_c --> 2kiv_c + h2o_c,,Other,False,0.0,0.0,1000.0,False,LOW
+IPMI,,2ippm_c <=> 3ippm_c,,Other,False,0.0,-1000.0,1000.0,True,LOW
+KARI,,alac__S_c + h_c + nadph_c --> dhiv_c + nadp_c,,Other,False,0.0,0.0,1000.0,False,LOW
+MKOX,menaquinol-8 oxidation (pseudo),mql8_c + nad_c --> h_c + mqn8_c + nadh_c,,Other,False,0.0,0.0,1000.0,False,LOW
+PDXK,,atp_c + pydxn_c --> adp_c + h_c + pydx5p_c,,Other,False,0.0,0.0,1000.0,False,LOW
+RIBFLVKin,,atp_c + ribflv_c --> adp_c + fmn_c + h_c,,Other,False,0.0,0.0,1000.0,False,LOW
+SUPPLY_oaa_c,, --> oaa_c,,Other,False,0.0,0.0,0.0,False,LOW
+THIK,,atp_c + thm_c --> adp_c + h_c + thmpp_c,,Other,False,0.0,0.0,1000.0,False,LOW

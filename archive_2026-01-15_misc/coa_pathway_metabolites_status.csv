@@ -1,0 +1,11 @@
+Metabolite_ID,Name,Exists,Total_Reactions,Producing_Reactions,Consuming_Reactions
+pnto_c,Pantothenate,False,0,0,0
+pnto__R_c,Pantothenate (R),True,2,1,1
+4ppan_c,4'-Phosphopantothenate,True,2,1,1
+pppcs_c,4'-Phosphopantothenoylcysteine,False,0,0,0
+4ppcys_c,4'-Phosphopantothenoylcysteine (alternative),True,2,1,1
+pppan_c,4'-Phosphopantetheine,False,0,0,0
+pan4p_c,4'-Phosphopantetheine (alternative),True,4,2,2
+dcoa_c,Dephospho-CoA,False,0,0,0
+dpcoa_c,Dephospho-CoA (alternative),True,3,2,1
+coa_c,Coenzyme A,True,191,74,117

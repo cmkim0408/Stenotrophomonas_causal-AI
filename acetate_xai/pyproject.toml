@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "acetate-xai"
+version = "0.1.0"
+description = "Genome-scale digital twin (FBA/FVA) pipeline for acetate-fed growth regime explanation (XAI)."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "cmkim-lab" }]
+dependencies = [
+  "cobra>=0.29.0",
+  "pandas>=2.0.0",
+  "pyyaml>=6.0.0",
+  "pyarrow>=14.0.0",
+  "scikit-learn>=1.3.0",
+  "typer>=0.9.0",
+  "rich>=13.0.0",
+  "tqdm>=4.66.0",
+  "joblib>=1.3.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=7.0.0",
+  "ruff>=0.5.0",
+]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+

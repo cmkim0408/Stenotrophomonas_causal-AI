@@ -1,0 +1,9 @@
+Reaction_ID,Name,Exists,Reversible,Equation
+G6PDH2r,Glucose-6-phosphate dehydrogenase,True,True,g6p_c + nadp_c <=> 6pgl_c + h_c + nadph_c
+PGL,6-phosphogluconolactonase,True,False,6pgl_c + h2o_c --> 6pgc_c + h_c
+GND,6-phosphogluconate dehydrogenase,True,False,6pgc_c + nadp_c --> co2_c + nadph_c + ru5p__D_c
+RPE,Ribulose-5-phosphate epimerase,True,True,ru5p__D_c <=> xu5p__D_c
+RPI,Ribose-5-phosphate isomerase,True,True,r5p_c <=> ru5p__D_c
+TKT1,Transketolase (G6P + G3P -> E4P + F6P),True,True,r5p_c + xu5p__D_c <=> g3p_c + s7p_c
+TKT2,Transketolase (F6P + G3P -> E4P + Xu5P),True,True,e4p_c + xu5p__D_c <=> f6p_c + g3p_c
+TALA,Transaldolase,True,True,g3p_c + s7p_c <=> e4p_c + f6p_c

@@ -1,0 +1,17 @@
+﻿reaction_id,name,equation,genes,pathway,priority,category,description,reason,lower_bound,upper_bound,reversible
+ACS_ADP,,ac_c + atp_c + coa_c <=> accoa_c + adp_c + pi_c,,Nucleotide Synthesis,HIGH,Acetyl-CoA Synthesis,Acetate-CoA ligase (ADP-forming) - Acetate + ATP + CoA ⇄ AcCoA + ADP + Pi,Acetate에서 AcCoA 생산 핵심 반응,-1000.0,1000.0,True
+PC,pyruvate carboxylase,atp_c + hco3_c + pyr_c --> adp_c + h_c + oaa_c + pi_c,,Central Carbon Metabolism,HIGH,Central Carbon Metabolism,Pyruvate carboxylase - Pyruvate + HCO3 → OAA (Gluconeogenesis 핵심),"PEP 생산에 필요, OAA 생산 경로",0.0,1000.0,False
+PPDK,Pyruvate phosphate dikinase,atp_c + pi_c + pyr_c --> amp_c + pep_c + ppi_c,,Central Carbon Metabolism,HIGH,Central Carbon Metabolism,Pyruvate phosphate dikinase - Pyruvate → PEP (대체 경로),PEP 생산 대체 경로,0.0,0.0,False
+PEPCK,phosphoenolpyruvate carboxykinase (GTP),gtp_c + oaa_c --> co2_c + gdp_c + pep_c,,Nucleotide Synthesis,HIGH,Gluconeogenesis,PEP carboxykinase (GTP) - OAA + GTP → PEP + CO2 + GDP,PEP 생산 핵심 반응,0.0,1000.0,False
+PEPCK_ATP,PEP carboxykinase (ATP),atp_c + oaa_c --> adp_c + co2_c + pep_c,,Nucleotide Synthesis,HIGH,Gluconeogenesis,PEP carboxykinase (ATP) - OAA + ATP → PEP + CO2 + ADP,PEP 생산 대체 반응 (ATP 사용),0.0,1000.0,False
+CA,carbonic anhydrase,co2_c + h2o_c <=> h_c + hco3_c,,Other,MEDIUM,Carbon Metabolism,Carbonic anhydrase - CO2 + H2O ⇄ H + HCO3,HCO3 생산/소비 균형,-1000.0,1000.0,True
+FADS,,atp_c + fmn_c --> fad_c + ppi_c,,Cofactor Synthesis,MEDIUM,Cofactor Synthesis,FAD synthetase - ATP + FMN → FAD + PPI,FAD 보조인자 합성,0.0,1000.0,False
+RIBFLVKin,,atp_c + ribflv_c --> adp_c + fmn_c + h_c,,Other,MEDIUM,Cofactor Synthesis,Riboflavin kinase - ATP + Riboflavin → ADP + FMN + H,FMN 생합성 경로,0.0,1000.0,False
+MKOX,menaquinol-8 oxidation (pseudo),mql8_c + nad_c --> h_c + mqn8_c + nadh_c,,Other,MEDIUM,ETC / Electron Transport,Menaquinol-8 oxidation,전자 전달 사슬 관련,0.0,1000.0,False
+MKRED,menaquinone-8 reduction by NADH,h_c + mqn8_c + nadh_c --> mql8_c + nad_c,,Cofactor Synthesis,MEDIUM,ETC / Electron Transport,Menaquinone-8 reduction by NADH,전자 전달 사슬 관련,0.0,1000.0,False
+MQN8RD,menaquinone-8 reduction by NADH,h_c + mqn8_c + nadh_c --> mql8_c + nad_c,,Cofactor Synthesis,MEDIUM,ETC / Electron Transport,Menaquinone-8 reduction by NADH (alternative),전자 전달 사슬 관련,0.0,1000.0,False
+MQN8r_NADH,,2.0 h_c + mqn8_c + nadh_c --> mql8_c + nad_c,,Cofactor Synthesis,MEDIUM,ETC / Electron Transport,Menaquinone-8 reduction by NADH,전자 전달 사슬 관련,0.0,1000.0,False
+MQN8red,Menaquinone-8 NADH dehydrogenase (lumped),h_c + mqn8_c + nadh_c --> mql8_c + nad_c,,Cofactor Synthesis,MEDIUM,ETC / Electron Transport,Menaquinone-8 NADH dehydrogenase (lumped),전자 전달 사슬 관련,0.0,0.0,False
+NADH16_MQ,NDH-1 to MQN8,4.0 h_c + mqn8_c + nadh_c --> 3.0 h_p + mqn8h2_c + nad_c,,Cofactor Synthesis,MEDIUM,ETC / Electron Transport,NDH-1 to MQN8 - Complex I to menaquinone,Complex I 관련 전자 전달,0.0,1000.0,False
+FRD7,Fumarate reductase,fum_c + q8h2_c --> q8_c + succ_c,,Other,MEDIUM,TCA Cycle,Fumarate reductase - Fumarate + Q8H2 → Succinate + Q8,무산소 조건에서 사용 가능,0.0,1000.0,False
+SUCDi,Succinate dehydrogenase,q8_c + succ_c --> fum_c + q8h2_c,,Other,MEDIUM,TCA Cycle,Succinate dehydrogenase - Succinate + Q8 → Fumarate + Q8H2,"TCA 사이클, 전자 전달 사슬",0.0,1000.0,False

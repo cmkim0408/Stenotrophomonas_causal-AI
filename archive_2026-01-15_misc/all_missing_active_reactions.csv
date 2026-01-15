@@ -1,0 +1,10 @@
+﻿reaction_id,name,equation,genes,pathway,max_flux,lower_bound,upper_bound,reversible,priority
+SUCDi,Succinate dehydrogenase,q8_c + succ_c --> fum_c + q8h2_c,,TCA Cycle,1.0000000000000016,0.0,1000.0,False,HIGH
+ACS_ADP,,ac_c + atp_c + coa_c <=> accoa_c + adp_c + pi_c,,Acetate Metabolism,0.9434482758620704,-1000.0,1000.0,True,HIGH
+PEPCK_ATP,PEP carboxykinase (ATP),atp_c + oaa_c --> adp_c + co2_c + pep_c,,Gluconeogenesis / Glycolysis,0.0786206896551722,0.0,1000.0,False,HIGH
+T_o2_e_to_o2_c,,o2_e <=> o2_c,,Transport,2.000000000000004,-1000.0,1000.0,True,MEDIUM
+EX_hco3_e,Bicarbonate exchange,hco3_e <=> ,,Exchange,1.0000000000000118,-1000.0,1000.0,True,MEDIUM
+T_hco3_e_to_c,,hco3_e <=> hco3_c,,Transport,1.0000000000000118,-1000.0,1000.0,True,MEDIUM
+ACtexi,Acetate transport (e<->c),ac_e <=> ac_c,,Transport,1.0,-1000.0,1000.0,True,MEDIUM
+T_nh4_e_to_nh4_c,,nh4_e <=> nh4_c,,Transport,0.104827586206899,-1000.0,1000.0,True,MEDIUM
+T_fe3_e_to_fe3_c,,fe3_e <=> fe3_c,,Transport,0.017931034482761,-1000.0,1000.0,True,MEDIUM

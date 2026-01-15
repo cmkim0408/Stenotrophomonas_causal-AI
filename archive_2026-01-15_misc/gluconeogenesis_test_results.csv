@@ -1,0 +1,2 @@
+PEP_production,G6P_production,E4P_production
+"{'status': 'optimal', 'max_flux': 6.582298448205041e-16, 'can_produce': False}","{'status': 'optimal', 'max_flux': 1.6455746120512661e-15, 'can_produce': False}","{'status': 'optimal', 'max_flux': 0.0, 'can_produce': False}"

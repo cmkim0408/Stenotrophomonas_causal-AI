@@ -1,0 +1,6 @@
+Combination,Status,ATP_Flux,Can_Produce
+{'atp_c': -0.1},optimal,0.10000000000000006,True
+{'pep_c': -0.1},optimal,4.679806682367422e-16,False
+"{'atp_c': -0.1, 'pep_c': -0.1}",optimal,0.10000000000000257,True
+"{'atp_c': -0.05, 'coa_c': -0.01}",optimal,0.049999999999998955,True
+"{'atp_c': -0.05, 'coa_c': -0.01, 'nad_c': -0.01}",optimal,0.05000000000000062,True

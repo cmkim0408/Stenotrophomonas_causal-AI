@@ -1,0 +1,5 @@
+Strategy,Components,Status,Biomass_Flux,Can_Grow,Active_Pathways,Acetate_Uptake,Biomass_Yield
+ATP만,{'atp_c': -0.1},optimal,1.4404876940552367e-28,False,0,0,0
+ATP + CoA,"{'atp_c': -0.05, 'coa_c': -0.01}",optimal,0.0,False,0,0,0
+ATP + CoA + NAD+,"{'atp_c': -0.05, 'coa_c': -0.01, 'nad_c': -0.01}",optimal,5.249548370899295e-29,False,0,0,0
+ATP + PEP,"{'atp_c': -0.05, 'pep_c': -0.05}",optimal,1.8084012824853339e-31,False,0,0,0

@@ -1,0 +1,6 @@
+Cofactor,Metabolite_ID,Can_Produce,Status,Max_Flux
+CoA,coa_c,False,infeasible,0
+NAD+,nad_c,False,infeasible,0
+NADP+,nadp_c,False,infeasible,0
+FAD,fad_c,False,infeasible,0
+Tetrahydrofolate,thf_c,False,infeasible,0

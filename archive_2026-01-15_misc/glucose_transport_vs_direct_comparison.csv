@@ -1,0 +1,3 @@
+Method,Status,Biomass_Flux,Can_Grow
+Transport 필요 (EX_glc__D_e),infeasible,0,False
+직접 공급 (glc__D_c demand),infeasible,0,False
