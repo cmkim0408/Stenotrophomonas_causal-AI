@@ -56,6 +56,76 @@ def _encode_categoricals(df: pd.DataFrame, cols: Iterable[str]) -> pd.DataFrame:
     return out
 
 
+def _prepare_causal_matrix(
+    df: pd.DataFrame,
+    variables: list[str],
+    *,
+    min_rows: int = 200,
+) -> tuple[pd.DataFrame, dict]:
+    """
+    Prepare a numeric matrix for causal discovery without dropping almost all rows.
+
+    Rules (minimal change, robust):
+    - SHAP feature columns: numeric, fillna(0.0)
+    - Numeric meta columns (atpm_fixed, o2_lb, frac_opt, targets_n): create has_<col>, fillna(0.0)
+    - Categorical meta columns (acetate_mode, nh4_mode): create has_<col>, fillna("none"), one-hot encode
+    - Outcomes: keep; encode primary_regime to codes; drop rows only if outcomes are missing
+    """
+    work = df[variables].copy()
+
+    # Identify groups
+    shap_feats = [c for c in work.columns if c.startswith(("width__", "mid__", "signchange__"))]
+    num_meta = [c for c in ["atpm_fixed", "o2_lb", "frac_opt", "targets_n"] if c in work.columns]
+    cat_meta = [c for c in ["acetate_mode", "nh4_mode"] if c in work.columns]
+    outcomes = [c for c in ["primary_regime", "maintenance_severity"] if c in work.columns]
+
+    meta_info = {"shap_feats": shap_feats, "num_meta": num_meta, "cat_meta": cat_meta, "outcomes": outcomes}
+
+    # Outcomes: we will drop rows only if outcomes are missing
+    if "primary_regime" in work.columns:
+        work["primary_regime"] = work["primary_regime"].astype(str)
+        # restore NaN-like strings to NaN
+        work.loc[work["primary_regime"].str.strip().str.lower().isin(["", "nan"]), "primary_regime"] = np.nan
+        work["primary_regime"] = work["primary_regime"].astype("category").cat.codes.replace({-1: np.nan})
+    if "maintenance_severity" in work.columns:
+        work["maintenance_severity"] = pd.to_numeric(work["maintenance_severity"], errors="coerce")
+
+    # Numeric meta: has_ indicator + fillna(0)
+    for c in num_meta:
+        work[f"has_{c}"] = (~pd.to_numeric(work[c], errors="coerce").isna()).astype(int)
+        work[c] = pd.to_numeric(work[c], errors="coerce").fillna(0.0)
+
+    # Categorical meta: has_ indicator + fillna("none") + one-hot
+    for c in cat_meta:
+        has = work[c].notna() & (work[c].astype(str).str.strip() != "") & (work[c].astype(str).str.lower() != "nan")
+        work[f"has_{c}"] = has.astype(int)
+        work[c] = work[c].astype(str)
+        work.loc[~has, c] = "none"
+        dummies = pd.get_dummies(work[c], prefix=c, prefix_sep="=", dtype=int)
+        work = pd.concat([work.drop(columns=[c]), dummies], axis=1)
+
+    # SHAP features: numeric fill
+    for c in shap_feats:
+        work[c] = pd.to_numeric(work[c], errors="coerce").fillna(0.0)
+
+    # Final: drop rows only if outcomes are missing (if present)
+    if outcomes:
+        work = work.dropna(subset=outcomes).copy()
+
+    # Ensure numeric everywhere
+    for c in work.columns:
+        work[c] = pd.to_numeric(work[c], errors="coerce")
+    work = work.fillna(0.0)
+
+    if len(work) < min_rows:
+        raise RuntimeError(
+            f"Too few rows after meta-aware cleaning: {len(work)} (need >= {min_rows}). "
+            "Check whether outcomes are missing or the dataset is too small."
+        )
+
+    return work, meta_info
+
+
 def _select_variables(
     df: pd.DataFrame,
     *,
@@ -113,7 +183,9 @@ def _apply_priors_pc(background_knowledge, variables: list[str]) -> dict:
     - maintenance_severity: forbid outgoing edges from it
     """
     priors = {"forbid_incoming_to_exogenous": [], "forbid_outgoing_from_maintenance": []}
-    exogenous = [v for v in ["atpm_fixed", "o2_lb", "acetate_mode", "nh4_mode", "frac_opt", "targets_n"] if v in variables]
+    # After preprocessing, exogenous variables can expand to has_* and one-hot columns.
+    exo_prefixes = ("atpm_fixed", "o2_lb", "frac_opt", "targets_n", "acetate_mode", "nh4_mode", "has_")
+    exogenous = [v for v in variables if v.startswith(exo_prefixes)]
     maint = "maintenance_severity" if "maintenance_severity" in variables else None
 
     # forbid X -> exog for all X != exog
@@ -241,16 +313,11 @@ def main(argv: list[str] | None = None) -> int:
         print("[ERROR] Not enough variables selected for causal discovery (need >= 3).")
         return 2
 
-    # Prepare numeric data matrix
-    work = df[variables].copy()
-    # Encode categoricals
-    work = _encode_categoricals(work, cols=["acetate_mode", "nh4_mode", "primary_regime"])
-    # Ensure numeric
-    for c in work.columns:
-        work[c] = pd.to_numeric(work[c], errors="coerce")
-    work = work.dropna(axis=0, how="any").copy()
-    if len(work) < 10:
-        print(f"[ERROR] Too few complete rows after cleaning: {len(work)} (need >= 10).")
+    # Prepare numeric data matrix (meta-aware; do NOT drop rows just because meta is NaN)
+    try:
+        work, prep_meta = _prepare_causal_matrix(df, variables, min_rows=200)
+    except Exception as e:  # noqa: BLE001
+        print(f"[ERROR] {e}")
         return 2
 
     rng = np.random.default_rng(int(args.seed))
