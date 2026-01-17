@@ -32,6 +32,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--bootstrap", type=int, default=100, help="Bootstrap iterations")
     p.add_argument("--seed", type=int, default=42, help="Random seed")
     p.add_argument("--method", default="pc", choices=["pc", "notears"], help="Discovery method")
+    p.add_argument("--use-priors", action="store_true", help="Apply BackgroundKnowledge priors (default: off).")
     p.add_argument("--verbose", "-v", action="store_true", help="Verbose logging")
     return p
 
@@ -238,6 +239,7 @@ def _run_pc(
     data: np.ndarray,
     variables: list[str],
     seed: int,
+    use_priors: bool,
 ) -> tuple[list[Edge], dict]:
     """
     PC Algorithm using causal-learn (recommended).
@@ -252,14 +254,28 @@ def _run_pc(
             f"Import error: {e}"
         ) from e
 
-    bk = BackgroundKnowledge()
-    priors = _apply_priors_pc(bk, variables)
+    bk = None
+    priors: dict = {}
+    if use_priors:
+        bk = BackgroundKnowledge()
+        priors = _apply_priors_pc(bk, variables)
+        logging.info("[INFO] priors enabled (--use-priors)")
+    else:
+        logging.info("[INFO] priors skipped (default)")
 
     # Use FisherZ test (continuous) for a mixed dataset; pragmatic v0.
     # Users can refine to gsq/chisq later if desired.
-    g = pc(data, alpha=0.05, indep_test="fisherz", stable=True, uc_rule=0, uc_priority=2, background_knowledge=bk)
+    g = pc(
+        data,
+        alpha=0.05,
+        indep_test="fisherz",
+        stable=True,
+        uc_rule=0,
+        uc_priority=2,
+        background_knowledge=bk,
+    )
     edges = _edges_from_causallearn_graph(g, variables)
-    meta = {"alpha": 0.05, "indep_test": "fisherz", "priors": priors, "seed": seed}
+    meta = {"alpha": 0.05, "indep_test": "fisherz", "priors": priors, "seed": seed, "use_priors": use_priors}
     return edges, meta
 
 
@@ -325,7 +341,9 @@ def main(argv: list[str] | None = None) -> int:
     # Fit once on full cleaned data
     data_mat = work.to_numpy(dtype=float)
     if args.method == "pc":
-        edges, method_meta = _run_pc(data_mat, variables=list(work.columns), seed=int(args.seed))
+        edges, method_meta = _run_pc(
+            data_mat, variables=list(work.columns), seed=int(args.seed), use_priors=bool(args.use_priors)
+        )
     else:
         edges, method_meta = _run_notears(data_mat, variables=list(work.columns), seed=int(args.seed))
 
@@ -341,7 +359,7 @@ def main(argv: list[str] | None = None) -> int:
         boot = work.iloc[idx].to_numpy(dtype=float)
         try:
             if args.method == "pc":
-                e_b, _ = _run_pc(boot, variables=list(work.columns), seed=int(args.seed))
+                e_b, _ = _run_pc(boot, variables=list(work.columns), seed=int(args.seed), use_priors=bool(args.use_priors))
             else:
                 e_b, _ = _run_notears(boot, variables=list(work.columns), seed=int(args.seed))
         except Exception as e:  # noqa: BLE001
