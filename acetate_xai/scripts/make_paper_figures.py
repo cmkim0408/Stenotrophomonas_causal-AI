@@ -154,7 +154,8 @@ def _plot_workflow(out_png: Path) -> None:
 
     out_png.parent.mkdir(parents=True, exist_ok=True)
 
-    fig, ax = plt.subplots(figsize=(13, 4.2))
+    # wider canvas + smaller boxes to increase spacing
+    fig, ax = plt.subplots(figsize=(18, 4.2))
     ax.set_axis_off()
 
     boxes = [
@@ -169,9 +170,9 @@ def _plot_workflow(out_png: Path) -> None:
     ]
 
     # positions in axes fraction coordinates
-    xs = np.linspace(0.03, 0.97, len(boxes))
+    xs = np.linspace(0.04, 0.96, len(boxes))
     y = 0.55
-    w = 0.115
+    w = 0.095
     h = 0.32
 
     for i, (x, text) in enumerate(zip(xs, boxes)):
@@ -193,8 +194,9 @@ def _plot_workflow(out_png: Path) -> None:
         if i < len(boxes) - 1:
             ax.annotate(
                 "",
-                xy=(x + w / 2, y + h / 2),
-                xytext=(xs[i + 1] - w / 2, y + h / 2),
+                # matplotlib arrow goes from xytext -> xy; force rightward arrows
+                xy=(xs[i + 1] - w / 2, y + h / 2),
+                xytext=(x + w / 2, y + h / 2),
                 arrowprops=dict(arrowstyle="->", lw=1.2),
                 xycoords=ax.transAxes,
                 textcoords=ax.transAxes,
@@ -229,6 +231,148 @@ def _plot_top_edges_bar(edge_stability_csv: Path, out_png: Path, topn: int = 10)
     plt.close(fig)
 
 
+def _plot_regime_map_primary_only(regime_map_csv: Path, out_png: Path) -> None:
+    """
+    Rebuild regime map without run_id legend:
+      - x: primary_regime (categorical)
+      - y: maintenance_severity
+      - color: primary_regime
+    """
+    import matplotlib
+
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    out_png.parent.mkdir(parents=True, exist_ok=True)
+
+    df = pd.read_csv(regime_map_csv)
+    need = {"primary_regime", "maintenance_severity"}
+    if not need.issubset(df.columns):
+        raise ValueError(f"regime_map.csv missing required columns: {sorted(need)}")
+
+    df["primary_regime"] = df["primary_regime"].astype(str).str.strip()
+    df["maintenance_severity"] = pd.to_numeric(df["maintenance_severity"], errors="coerce")
+    df = df.dropna(subset=["primary_regime", "maintenance_severity"]).copy()
+    df = df[df["primary_regime"].str.lower() != "nan"]
+
+    regimes = sorted(df["primary_regime"].unique().tolist())
+    x_map = {r: i for i, r in enumerate(regimes)}
+    x = df["primary_regime"].map(x_map).astype(float).values
+    y = df["maintenance_severity"].astype(float).values
+
+    # jitter in x to reduce overplotting
+    rng = np.random.default_rng(42)
+    xj = x + rng.normal(0.0, 0.06, size=len(x))
+
+    fig, ax = plt.subplots(figsize=(10, 5))
+    for r in regimes:
+        m = df["primary_regime"] == r
+        ax.scatter(
+            xj[m.values],
+            y[m.values],
+            s=18,
+            alpha=0.85,
+            label=r,
+        )
+
+    ax.set_xticks(list(x_map.values()), list(x_map.keys()), rotation=0)
+    ax.set_ylabel("maintenance_severity (objective / max objective per run)")
+    ax.set_xlabel("primary_regime")
+    ax.set_title("Regime map (colored by primary_regime; no run_id legend)")
+    ax.grid(True, axis="y", alpha=0.25)
+    ax.legend(title="primary_regime", fontsize=8, title_fontsize=9, loc="best", frameon=True)
+    fig.tight_layout()
+    fig.savefig(out_png, dpi=220, bbox_inches="tight")
+    plt.close(fig)
+
+
+def _load_feature_matrix_regime_dataset(regime_dataset_parquet: Path, *, seed: int = 42, max_rows: int = 2000) -> pd.DataFrame:
+    """
+    Load X feature matrix from regime_dataset.parquet:
+      - select width__/mid__/signchange__ columns
+      - coerce to numeric
+      - sample up to max_rows for faster SHAP plotting
+    """
+    df = pd.read_parquet(regime_dataset_parquet)
+    feat_cols = [c for c in df.columns if c.startswith(("width__", "mid__", "signchange__"))]
+    if not feat_cols:
+        raise ValueError("No feature columns found in regime_dataset.parquet (expected width__/mid__/signchange__).")
+    X = df[feat_cols].copy()
+    for c in X.columns:
+        if X[c].dtype == bool:
+            X[c] = X[c].astype(int)
+    X = X.apply(pd.to_numeric, errors="coerce").fillna(0.0)
+    if len(X) > max_rows:
+        X = X.sample(n=int(max_rows), random_state=int(seed))
+    return X
+
+
+def _plot_shap_beeswarm_from_saved_model(
+    *,
+    model_json: Path,
+    X: pd.DataFrame,
+    out_png: Path,
+    is_classifier: bool,
+    max_display: int = 15,
+    figsize: tuple[int, int] = (10, 5),
+) -> None:
+    """
+    Recompute SHAP beeswarm from saved xgboost model.json and feature matrix X.
+    """
+    try:
+        import shap
+    except Exception as e:  # noqa: BLE001
+        raise RuntimeError(f"Missing dependency: shap ({e}). Install: pip install shap") from e
+    try:
+        from xgboost import XGBClassifier, XGBRegressor
+    except Exception as e:  # noqa: BLE001
+        raise RuntimeError(f"Missing dependency: xgboost ({e}). Install: pip install xgboost") from e
+
+    import matplotlib
+
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    out_png.parent.mkdir(parents=True, exist_ok=True)
+
+    if is_classifier:
+        model = XGBClassifier()
+    else:
+        model = XGBRegressor()
+    model.load_model(str(model_json))
+
+    explainer = shap.TreeExplainer(model)
+    shap_values = explainer.shap_values(X)
+
+    plt.figure(figsize=figsize)
+    shap.summary_plot(shap_values, X, show=False, max_display=int(max_display))
+    plt.tight_layout()
+    plt.savefig(out_png, dpi=220, bbox_inches="tight")
+    plt.close()
+
+
+def _rewrite_png_with_figsize(src_png: Path, out_png: Path, figsize: tuple[int, int] = (10, 5)) -> None:
+    """
+    Fallback when shap/xgboost are not available locally:
+    re-save an existing PNG into a controlled canvas size.
+    (Note: does not change max_display; only changes the figure size.)
+    """
+    import matplotlib
+
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    import matplotlib.image as mpimg
+
+    out_png.parent.mkdir(parents=True, exist_ok=True)
+    img = mpimg.imread(src_png)
+    plt.figure(figsize=figsize)
+    plt.imshow(img)
+    plt.axis("off")
+    plt.tight_layout()
+    plt.savefig(out_png, dpi=220, bbox_inches="tight")
+    plt.close()
+
+
 def main() -> int:
     results_root = _find_results_root()
 
@@ -237,22 +381,30 @@ def main() -> int:
     doc_out = Path("docs") / "PROJECT_STATUS_SUMMARY.md"
 
     # Source files inside results_root
-    src_regime_map = results_root / "platform_summary" / "regime_map.png"
+    src_regime_map_png = results_root / "platform_summary" / "regime_map.png"
+    src_regime_map_csv = results_root / "platform_summary" / "regime_map.csv"
     src_platform_csv = results_root / "platform_summary" / "platform_summary.csv"
     src_robustness_txt = results_root / "platform_summary" / "robustness_summary.txt"
-    src_shap_regime = results_root / "xai_xgb" / "shap_beeswarm.png"
-    src_shap_sev = results_root / "xai_xgb_maintenance" / "shap_beeswarm.png"
+    src_xgb_regime_model = results_root / "xai_xgb" / "model.json"
+    src_xgb_sev_model = results_root / "xai_xgb_maintenance" / "model.json"
+    src_shap_regime_png = results_root / "xai_xgb" / "shap_beeswarm.png"
+    src_shap_sev_png = results_root / "xai_xgb_maintenance" / "shap_beeswarm.png"
     src_causal_png = results_root / "causal_dag" / "causal_dag.png"
     src_edge_stab = results_root / "causal_dag" / "edge_stability.csv"
+    src_regime_dataset = results_root / "regime_dataset.parquet"
 
     required = [
-        src_regime_map,
+        src_regime_map_png,
+        src_regime_map_csv,
         src_platform_csv,
         src_robustness_txt,
-        src_shap_regime,
-        src_shap_sev,
+        src_xgb_regime_model,
+        src_xgb_sev_model,
+        src_shap_regime_png,
+        src_shap_sev_png,
         src_causal_png,
         src_edge_stab,
+        src_regime_dataset,
     ]
     missing = [p for p in required if not p.exists()]
     if missing:
@@ -268,10 +420,35 @@ def main() -> int:
     # Fig01: workflow (drawn)
     _plot_workflow(figures_out / "Fig01_workflow.png")
 
-    # Fig02-Fig05: copies
-    _copy(src_regime_map, figures_out / "Fig02_regime_map.png")
-    _copy(src_shap_regime, figures_out / "Fig03_shap_regime_beeswarm.png")
-    _copy(src_shap_sev, figures_out / "Fig04_shap_severity_beeswarm.png")
+    # Fig02: re-draw without run_id legend (primary_regime colors only)
+    _plot_regime_map_primary_only(src_regime_map_csv, figures_out / "Fig02_regime_map.png")
+
+    # Fig03/04: re-draw beeswarm with max_display=15 and figsize=(10,5)
+    X_feat = _load_feature_matrix_regime_dataset(src_regime_dataset, seed=42, max_rows=2000)
+    try:
+        _plot_shap_beeswarm_from_saved_model(
+            model_json=src_xgb_regime_model,
+            X=X_feat,
+            out_png=figures_out / "Fig03_shap_regime_beeswarm.png",
+            is_classifier=True,
+            max_display=15,
+            figsize=(10, 5),
+        )
+        _plot_shap_beeswarm_from_saved_model(
+            model_json=src_xgb_sev_model,
+            X=X_feat,
+            out_png=figures_out / "Fig04_shap_severity_beeswarm.png",
+            is_classifier=False,
+            max_display=15,
+            figsize=(10, 5),
+        )
+    except RuntimeError as e:
+        # Local dev environments may not have shap installed; keep script usable by falling back to re-saving PNGs.
+        print(f"[WARN] Could not recompute SHAP beeswarm ({e}). Falling back to re-saving existing beeswarm PNGs.")
+        _rewrite_png_with_figsize(src_shap_regime_png, figures_out / "Fig03_shap_regime_beeswarm.png", figsize=(10, 5))
+        _rewrite_png_with_figsize(src_shap_sev_png, figures_out / "Fig04_shap_severity_beeswarm.png", figsize=(10, 5))
+
+    # Fig05: copy DAG figure
     _copy(src_causal_png, figures_out / "Fig05_causal_dag.png")
 
     # Fig06: top edges bar (drawn)
