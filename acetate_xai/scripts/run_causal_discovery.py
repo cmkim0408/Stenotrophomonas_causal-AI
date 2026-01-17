@@ -33,6 +33,12 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--seed", type=int, default=42, help="Random seed")
     p.add_argument("--method", default="pc", choices=["pc", "notears"], help="Discovery method")
     p.add_argument("--use-priors", action="store_true", help="Apply BackgroundKnowledge priors (default: off).")
+    p.add_argument(
+        "--indep-test",
+        default="fisherz",
+        choices=["fisherz", "kci"],
+        help="PC independence test (default: fisherz). If fisherz fails, kci will be attempted as fallback when available.",
+    )
     p.add_argument("--verbose", "-v", action="store_true", help="Verbose logging")
     return p
 
@@ -55,6 +61,88 @@ def _encode_categoricals(df: pd.DataFrame, cols: Iterable[str]) -> pd.DataFrame:
         if c in out.columns:
             out[c] = out[c].astype("category").cat.codes.replace({-1: np.nan})
     return out
+
+
+def _remove_constant_columns(df: pd.DataFrame) -> tuple[pd.DataFrame, list[str]]:
+    """
+    Remove columns with variance == 0 (including all-constant columns).
+    """
+    # ddof=0 gives population variance; robust for small samples
+    var = df.var(axis=0, ddof=0)
+    const_cols = var.index[(var == 0) | var.isna()].astype(str).tolist()
+    if const_cols:
+        return df.drop(columns=const_cols), const_cols
+    return df, []
+
+
+def _remove_collinear_columns(df: pd.DataFrame, *, threshold: float = 0.9999) -> tuple[pd.DataFrame, list[str]]:
+    """
+    Remove columns to avoid near-perfect collinearity that makes correlation matrices singular.
+
+    Strategy: compute abs(corr), look at upper triangle, and drop the second column in any pair
+    with abs(corr) >= threshold.
+    """
+    if df.shape[1] <= 1:
+        return df, []
+
+    corr = df.corr().abs()
+    # upper triangle mask (excluding diagonal)
+    upper = corr.where(np.triu(np.ones(corr.shape), k=1).astype(bool))
+    to_drop: list[str] = []
+    for col in upper.columns:
+        if (upper[col] >= threshold).any():
+            to_drop.append(str(col))
+    if to_drop:
+        return df.drop(columns=to_drop), to_drop
+    return df, []
+
+
+def _add_jitter(df: pd.DataFrame, *, seed: int, scale: float) -> pd.DataFrame:
+    """
+    Add tiny noise to avoid singular correlation matrices in FisherZ:
+      noise = scale * std(col) * N(0,1)
+    """
+    if df.empty:
+        return df
+    rng = np.random.default_rng(int(seed))
+    std = df.std(axis=0, ddof=0).replace({0.0: np.nan}).fillna(1.0).to_numpy()
+    noise = rng.normal(0.0, 1.0, size=df.shape) * (float(scale) * std)
+    out = df.to_numpy(dtype=float) + noise
+    return pd.DataFrame(out, columns=df.columns, index=df.index)
+
+
+def _pc_preprocess(
+    work: pd.DataFrame,
+    *,
+    seed: int,
+    corr_threshold: float = 0.9999,
+) -> tuple[pd.DataFrame, dict]:
+    """
+    Preprocess before PC(FisherZ) to prevent singular correlation matrix:
+    - numeric only coercion
+    - remove variance==0 cols
+    - remove collinear cols (abs corr >= threshold)
+    """
+    df = work.copy()
+    # force numeric
+    for c in df.columns:
+        df[c] = pd.to_numeric(df[c], errors="coerce")
+    df = df.fillna(0.0)
+
+    before = df.shape[1]
+    df, removed_constant = _remove_constant_columns(df)
+    df, removed_collinear = _remove_collinear_columns(df, threshold=corr_threshold)
+    meta = {
+        "removed_constant": removed_constant,
+        "removed_collinear": removed_collinear,
+        "final_vars": int(df.shape[1]),
+        "initial_vars": int(before),
+        "corr_threshold": float(corr_threshold),
+        "jitter_base": 1e-8,
+        "jitter_retry": 1e-7,
+        "seed": int(seed),
+    }
+    return df, meta
 
 
 def _prepare_causal_matrix(
@@ -240,6 +328,7 @@ def _run_pc(
     variables: list[str],
     seed: int,
     use_priors: bool,
+    indep_test: str,
 ) -> tuple[list[Edge], dict]:
     """
     PC Algorithm using causal-learn (recommended).
@@ -263,19 +352,11 @@ def _run_pc(
     else:
         logging.info("[INFO] priors skipped (default)")
 
-    # Use FisherZ test (continuous) for a mixed dataset; pragmatic v0.
-    # Users can refine to gsq/chisq later if desired.
-    g = pc(
-        data,
-        alpha=0.05,
-        indep_test="fisherz",
-        stable=True,
-        uc_rule=0,
-        uc_priority=2,
-        background_knowledge=bk,
-    )
+    # Use FisherZ by default. If it fails due to singular correlation matrices,
+    # caller is expected to jitter/retry; we also allow kci when requested/available.
+    g = pc(data, alpha=0.05, indep_test=indep_test, stable=True, uc_rule=0, uc_priority=2, background_knowledge=bk)
     edges = _edges_from_causallearn_graph(g, variables)
-    meta = {"alpha": 0.05, "indep_test": "fisherz", "priors": priors, "seed": seed, "use_priors": use_priors}
+    meta = {"alpha": 0.05, "indep_test": indep_test, "priors": priors, "seed": seed, "use_priors": use_priors}
     return edges, meta
 
 
@@ -338,14 +419,51 @@ def main(argv: list[str] | None = None) -> int:
 
     rng = np.random.default_rng(int(args.seed))
 
+    # Preprocess for PC to avoid singular correlation matrices
+    work_pc, pc_meta = _pc_preprocess(work, seed=int(args.seed))
+    print(f"[INFO] removed_constant={len(pc_meta['removed_constant'])} removed_collinear={len(pc_meta['removed_collinear'])} final_vars={pc_meta['final_vars']}")
+
     # Fit once on full cleaned data
-    data_mat = work.to_numpy(dtype=float)
     if args.method == "pc":
-        edges, method_meta = _run_pc(
-            data_mat, variables=list(work.columns), seed=int(args.seed), use_priors=bool(args.use_priors)
-        )
+        # Jitter strategy for FisherZ singular issue
+        indep = str(args.indep_test)
+        try:
+            data_mat = _add_jitter(work_pc, seed=int(args.seed), scale=pc_meta["jitter_base"]).to_numpy(dtype=float)
+            edges, method_meta = _run_pc(
+                data_mat,
+                variables=list(work_pc.columns),
+                seed=int(args.seed),
+                use_priors=bool(args.use_priors),
+                indep_test=indep,
+            )
+        except Exception as e1:  # noqa: BLE001
+            logging.warning("PC failed on first attempt (%s). Retrying with stronger jitter...", e1)
+            try:
+                data_mat = _add_jitter(work_pc, seed=int(args.seed), scale=pc_meta["jitter_retry"]).to_numpy(dtype=float)
+                edges, method_meta = _run_pc(
+                    data_mat,
+                    variables=list(work_pc.columns),
+                    seed=int(args.seed),
+                    use_priors=bool(args.use_priors),
+                    indep_test=indep,
+                )
+            except Exception as e2:  # noqa: BLE001
+                if indep != "kci":
+                    logging.warning("PC still failing with fisherz. Trying indep_test=kci as fallback...")
+                    data_mat = work_pc.to_numpy(dtype=float)
+                    edges, method_meta = _run_pc(
+                        data_mat,
+                        variables=list(work_pc.columns),
+                        seed=int(args.seed),
+                        use_priors=bool(args.use_priors),
+                        indep_test="kci",
+                    )
+                else:
+                    raise
+        method_meta["pc_preprocess"] = pc_meta
     else:
-        edges, method_meta = _run_notears(data_mat, variables=list(work.columns), seed=int(args.seed))
+        data_mat = work_pc.to_numpy(dtype=float)
+        edges, method_meta = _run_notears(data_mat, variables=list(work_pc.columns), seed=int(args.seed))
 
     # Bootstrap stability
     B = int(args.bootstrap)
@@ -356,12 +474,21 @@ def main(argv: list[str] | None = None) -> int:
     edge_counts: dict[str, int] = {}
     for b in range(B):
         idx = rng.integers(0, len(work), size=len(work))
-        boot = work.iloc[idx].to_numpy(dtype=float)
+        boot_df = work.iloc[idx].copy()
+        boot_df, _ = _pc_preprocess(boot_df, seed=int(args.seed) + b)
+        boot = _add_jitter(boot_df, seed=int(args.seed) + b, scale=pc_meta["jitter_base"]).to_numpy(dtype=float)
         try:
             if args.method == "pc":
-                e_b, _ = _run_pc(boot, variables=list(work.columns), seed=int(args.seed), use_priors=bool(args.use_priors))
+                # same indep_test setting as main run
+                e_b, _ = _run_pc(
+                    boot,
+                    variables=list(boot_df.columns),
+                    seed=int(args.seed),
+                    use_priors=bool(args.use_priors),
+                    indep_test=str(args.indep_test),
+                )
             else:
-                e_b, _ = _run_notears(boot, variables=list(work.columns), seed=int(args.seed))
+                e_b, _ = _run_notears(boot, variables=list(boot_df.columns), seed=int(args.seed))
         except Exception as e:  # noqa: BLE001
             logging.warning("Bootstrap iteration %d failed: %s", b, e)
             continue
