@@ -341,8 +341,32 @@ def _plot_shap_beeswarm_from_saved_model(
         model = XGBRegressor()
     model.load_model(str(model_json))
 
-    explainer = shap.TreeExplainer(model)
-    shap_values = explainer.shap_values(X)
+    # Prefer SHAP TreeExplainer, but fall back to xgboost pred_contribs when TreeExplainer fails
+    # (e.g., some multiclass JSON models store base_score as a list string).
+    try:
+        explainer = shap.TreeExplainer(model)
+        shap_values = explainer.shap_values(X)
+    except Exception as e:  # noqa: BLE001
+        # xgboost-native SHAP values (no TreeExplainer parsing)
+        import xgboost as xgb
+
+        print(f"[WARN] shap.TreeExplainer failed ({e}). Falling back to xgboost pred_contribs.")
+        booster = model.get_booster()
+        dmat = xgb.DMatrix(X, feature_names=list(X.columns))
+        try:
+            contrib = booster.predict(dmat, pred_contribs=True, strict_shape=True)
+        except TypeError:
+            contrib = booster.predict(dmat, pred_contribs=True)
+
+        arr = np.asarray(contrib)
+        # Regression: (N, F+1) -> drop bias
+        if arr.ndim == 2:
+            shap_values = arr[:, :-1]
+        # Multiclass strict_shape: (N, C, F+1) -> list[C] of (N,F)
+        elif arr.ndim == 3:
+            shap_values = [arr[:, c, :-1] for c in range(arr.shape[1])]
+        else:
+            raise RuntimeError(f"Unexpected pred_contribs shape: {arr.shape}") from e
 
     plt.figure(figsize=figsize)
     shap.summary_plot(shap_values, X, show=False, max_display=int(max_display))
