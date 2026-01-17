@@ -1,4 +1,4 @@
-.venv/
+﻿.venv/
 __pycache__/
 *.pyc
 .pytest_cache/
@@ -8,10 +8,14 @@ __pycache__/
 dist/
 build/
 
-# Large outputs (keep results out of git)
+# Large outputs / artifacts (keep out of git)
+results/
 *.parquet
 *.feather
 *.arrow
+*.tar.gz
+*.zip
 
-results/
-
+# Local one-off exports (keep out of git unless explicitly needed)
+pathway_gaps_detailed.csv
+reaction_ec_mapping.csv
