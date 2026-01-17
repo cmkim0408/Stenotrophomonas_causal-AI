@@ -1,0 +1,117 @@
+# RESULTS TREE (max depth=3)
+# source: results_all_v2_extracted/results
+
+results/
+|-- campaigns/
+|   |-- C1_o2_sweep/
+|   |   `-- run__acScale1.0__o2lb-100/
+|   |-- C2_nh4_free/
+|   |   `-- run__acFree__o2lb-100__nh4cap-100/
+|   |-- C3_o2_mid/
+|   |   `-- run__acFree__o2lb-50__nh4cap-100/
+|   |-- C3_o2_mid_300targets/
+|   |   |-- fva_parts/
+|   |   |-- xai/
+|   |   |-- features.parquet
+|   |   |-- fva_all.parquet
+|   |   |-- medium.yaml
+|   |   `-- regime_fba.parquet
+|   |-- C3_o2_mid_f099/
+|   |   |-- fva_parts/
+|   |   |-- xai/
+|   |   |-- features.parquet
+|   |   |-- fva_all.parquet
+|   |   |-- medium.yaml
+|   |   `-- regime_fba.parquet
+|   |-- C4_atpm_sweep/
+|   |   |-- run__baseC3__ATPM0/
+|   |   |-- run__baseC3__ATPM10/
+|   |   |-- run__baseC3__ATPM20/
+|   |   `-- run__baseC3__ATPM5/
+|   |-- C4_atpm_sweep_v2/
+|   |   |-- run__baseC3__ATPM0/
+|   |   |-- run__baseC3__ATPM10/
+|   |   |-- run__baseC3__ATPM20/
+|   |   `-- run__baseC3__ATPM5/
+|   `-- C5_pi_sweep/
+|       |-- run__baseC3__PILB-10/
+|       |-- run__baseC3__PILB-2/
+|       |-- run__baseC3__PILB-20/
+|       `-- run__baseC3__PILB-5/
+|-- causal_dag/
+|   |-- causal_dag.pdf
+|   |-- causal_dag.png
+|   |-- dag_edges.csv
+|   |-- dag_metadata.json
+|   `-- edge_stability.csv
+|-- causal_topk/
+|   |-- shap_importance_severity.csv
+|   |-- top_features_regime.csv
+|   `-- top_features_severity.csv
+|-- fva_parts_full/
+|   `-- ...
+|-- fva_parts_full_acfree/
+|   `-- ...
+|-- fva_parts_server_smoke/
+|   `-- condition_id=YE_00.parquet
+|-- platform_summary/
+|   |-- platform_summary.csv
+|   |-- regime_coverage.csv
+|   |-- regime_map.csv
+|   |-- regime_map.png
+|   |-- robustness_summary.txt
+|   `-- signature_modules.csv
+|-- test_rxnfix_server/
+|   `-- condition_id=YE_00.parquet
+|-- xai/
+|   |-- lasso_coefficients.csv
+|   |-- regime_fba.parquet
+|   |-- regime_fba_acfree.parquet
+|   |-- regime_table.csv
+|   `-- tree_rules.txt
+|-- xai_acfree/
+|   |-- lasso_coefficients.csv
+|   |-- regime_table.csv
+|   `-- tree_rules.txt
+|-- xai_platform/
+|   |-- confusion_matrix.csv
+|   |-- label_distribution.csv
+|   |-- linear_top_features.csv
+|   `-- tree_rules.txt
+|-- xai_platform_maintenance/
+|   |-- linear_top_features.csv
+|   |-- regression_metrics.csv
+|   |-- severity_distribution.csv
+|   `-- tree_rules.txt
+|-- xai_xgb/
+|   |-- classification_report.txt
+|   |-- confusion_matrix.csv
+|   |-- label_mapping.csv
+|   |-- model.json
+|   |-- run_metadata.json
+|   |-- shap_bar.png
+|   |-- shap_beeswarm.png
+|   |-- shap_dependence_width__12DGR120tipp.png
+|   |-- shap_dependence_width__ACONT.png
+|   |-- shap_dependence_width__EX_h2o_e.png
+|   `-- shap_importance.csv
+|-- xai_xgb_maintenance/
+|   |-- model.json
+|   |-- regression_metrics.csv
+|   |-- run_metadata.json
+|   |-- shap_bar.png
+|   |-- shap_beeswarm.png
+|   |-- shap_dependence_width__12DGR120tipp.png
+|   |-- shap_dependence_width__EX_h2o_e.png
+|   `-- shap_dependence_width__EX_o2_e.png
+|-- causal_dataset.parquet
+|-- causal_dataset_clean.parquet
+|-- causal_dataset_clean_labelint.parquet
+|-- causal_dataset_clean_numeric.parquet
+|-- failed_conditions.csv
+|-- features.parquet
+|-- features_acfree.parquet
+|-- fva_all.parquet
+|-- fva_all_acfree.parquet
+|-- regime_dataset.parquet
+`-- test_regime_rxnfix_atpm20.parquet
