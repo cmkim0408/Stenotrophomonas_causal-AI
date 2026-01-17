@@ -24,6 +24,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--subsample", type=float, default=0.8, help="Subsample")
     p.add_argument("--colsample-bytree", type=float, default=0.8, help="Colsample bytree")
     p.add_argument("--n-jobs", type=int, default=-1, help="Parallel jobs for XGBoost (-1 = all)")
+    p.add_argument("--no-dependence", action="store_true", help="Skip SHAP dependence plots.")
     p.add_argument("--verbose", "-v", action="store_true", help="Verbose logging")
     return p
 
@@ -37,6 +38,45 @@ def _safe_filename(s: str, max_len: int = 120) -> str:
     if not s2:
         s2 = "feature"
     return s2[:max_len]
+
+
+def _shap_global_importance_and_dep_values(shap_values) -> tuple[np.ndarray, np.ndarray | None]:
+    """
+    Return:
+      - global_importance: (F,) mean(|SHAP|) aggregated over samples + classes (if multi-class)
+      - dep_values: (N,F) SHAP values for dependence plots (averaged over classes if needed), or None
+
+    Handles common SHAP return shapes:
+      - list[C] of (N,F)
+      - ndarray (N,F)
+      - ndarray (C,N,F)
+      - ndarray (N,F,C)
+    """
+    if isinstance(shap_values, list) and shap_values:
+        arr = np.stack([np.asarray(v) for v in shap_values], axis=0)  # (C,N,F)
+        global_importance = np.mean(np.abs(arr), axis=(0, 1))  # (F,)
+        dep_vals = np.mean(arr, axis=0)  # (N,F)
+        return global_importance, dep_vals
+
+    arr = np.asarray(shap_values)
+    if arr.ndim == 2:
+        # (N,F)
+        global_importance = np.mean(np.abs(arr), axis=0)  # (F,)
+        return global_importance, arr
+
+    if arr.ndim == 3:
+        # Could be (C,N,F) or (N,F,C)
+        if arr.shape[0] < 20 and arr.shape[0] != arr.shape[1]:
+            # likely (C,N,F)
+            global_importance = np.mean(np.abs(arr), axis=(0, 1))  # (F,)
+            dep_vals = np.mean(arr, axis=0)  # (N,F)
+            return global_importance, dep_vals
+        # assume (N,F,C)
+        global_importance = np.mean(np.abs(arr), axis=(0, 2))  # (F,)
+        dep_vals = np.mean(arr, axis=2)  # (N,F)
+        return global_importance, dep_vals
+
+    raise TypeError(f"Unsupported shap_values shape: {getattr(arr, 'shape', None)}")
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -167,6 +207,15 @@ def main(argv: list[str] | None = None) -> int:
     explainer = shap.TreeExplainer(model)
     # shap values for multi-class are typically a list: [n_classes] of (n_samples, n_features)
     shap_values = explainer.shap_values(X_test)
+    global_importance, dep_vals = _shap_global_importance_and_dep_values(shap_values)
+
+    # Save global SHAP importance
+    shap_imp = (
+        pd.DataFrame({"feature": list(X_test.columns), "mean_abs_shap": global_importance})
+        .sort_values("mean_abs_shap", ascending=False)
+        .reset_index(drop=True)
+    )
+    shap_imp.to_csv(outdir / "shap_importance.csv", index=False)
 
     # Beeswarm
     plt.figure()
@@ -182,28 +231,23 @@ def main(argv: list[str] | None = None) -> int:
     plt.savefig(outdir / "shap_bar.png", dpi=200, bbox_inches="tight")
     plt.close()
 
-    # Top-3 dependence plots by mean(|SHAP|) aggregated across classes
-    if isinstance(shap_values, list) and shap_values:
-        arr = np.stack([np.asarray(v) for v in shap_values], axis=0)  # (C, N, F)
-        mean_abs = np.mean(np.abs(arr), axis=(0, 1))  # (F,)
-        # use majority class for dependence plots (simplifies shap API)
-        maj_class_int = int(pd.Series(y_train).value_counts().idxmax())
-        dep_vals = shap_values[maj_class_int]
+    # Top-3 dependence plots using global importance (mean over samples + classes)
+    top3_idx = np.argsort(global_importance)[-3:][::-1]
+    top3_features = [str(X_test.columns[int(i)]) for i in top3_idx]
+
+    if args.no_dependence:
+        print("[INFO] --no-dependence set: skipping dependence plots")
     else:
-        arr = np.asarray(shap_values)
-        mean_abs = np.mean(np.abs(arr), axis=0)
-        dep_vals = shap_values
-
-    top3_idx = np.argsort(-mean_abs)[:3]
-    top3_features = [X_test.columns[int(i)] for i in top3_idx]
-
-    for feat in top3_features:
-        safe = _safe_filename(feat)
-        plt.figure()
-        shap.dependence_plot(feat, dep_vals, X_test, show=False)
-        plt.tight_layout()
-        plt.savefig(outdir / f"shap_dependence_{safe}.png", dpi=200, bbox_inches="tight")
-        plt.close()
+        if dep_vals is None:
+            print("[WARN] dependence plots skipped (no suitable dep_vals)")
+        else:
+            for feat in top3_features:
+                safe = _safe_filename(feat)
+                plt.figure()
+                shap.dependence_plot(feat, dep_vals, X_test, show=False)
+                plt.tight_layout()
+                plt.savefig(outdir / f"shap_dependence_{safe}.png", dpi=200, bbox_inches="tight")
+                plt.close()
 
     # Log a short metrics snippet
     acc = float(np.mean(y_pred == y_test))
@@ -214,8 +258,10 @@ def main(argv: list[str] | None = None) -> int:
     print(f"[OK] Wrote: {outdir / 'model.json'}")
     print(f"[OK] Wrote: {outdir / 'shap_beeswarm.png'}")
     print(f"[OK] Wrote: {outdir / 'shap_bar.png'}")
-    for feat in top3_features:
-        print(f"[OK] Wrote: {outdir / ('shap_dependence_' + _safe_filename(feat) + '.png')}")
+    print(f"[OK] Wrote: {outdir / 'shap_importance.csv'}")
+    if not args.no_dependence:
+        for feat in top3_features:
+            print(f"[OK] Wrote: {outdir / ('shap_dependence_' + _safe_filename(feat) + '.png')}")
 
     # Keep a small metadata JSON (optional, but useful)
     meta = {
