@@ -1165,6 +1165,189 @@ def _set_wise_correlation_plot(
     plt.close(fig)
 
 
+def _resolve_best_run_features_parquet(results_root: Path, override_path: str | None) -> Path:
+    """
+    Resolve a single-run features.parquet for "best run correlation" figure.
+    Preference order:
+      1) --best-run-features override
+      2) calibrated run under extracted results_root: campaigns/C6_atpm_calibrated/run__atpmCalib_linear/features.parquet
+      3) baseline run under extracted results_root (C3): campaigns/C3_o2_mid/run__acFree__o2lb-50__nh4cap-100/features.parquet
+    """
+    if override_path:
+        p = Path(override_path)
+        if p.exists():
+            return p
+        raise FileNotFoundError(f"--best-run-features not found: {p}")
+
+    p1 = results_root / "campaigns" / "C6_atpm_calibrated" / "run__atpmCalib_linear" / "features.parquet"
+    if p1.exists():
+        return p1
+
+    p2 = results_root / "campaigns" / "C3_o2_mid" / "run__acFree__o2lb-50__nh4cap-100" / "features.parquet"
+    if p2.exists():
+        return p2
+
+    raise FileNotFoundError(
+        "Could not find a default best-run features.parquet under extracted results_root. "
+        "Pass --best-run-features explicitly."
+    )
+
+
+def _plot_best_run_set_panels(
+    *,
+    features_parquet: Path,
+    out_png: Path,
+    seed: int = 42,
+    n_boot: int = 1000,
+) -> None:
+    """
+    Fig02E (best-run correlation): use a SINGLE run's features.parquet (no mixing across runs).
+
+    Panels (2x2):
+      - acetate_gradient (emphasized: thicker regression line + bold rho)
+      - yeast_gradient
+      - nh4_gradient
+      - pH_YE_toggle (fallback panel; if missing, panel is blank)
+
+    Special behavior:
+      - Yeast/NH4: if X variance is near-zero, annotate "Model saturation observed".
+      - Larger markers; per-set colors.
+    """
+    import matplotlib
+
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    try:
+        from scipy.stats import pearsonr, spearmanr
+    except Exception as e:  # noqa: BLE001
+        raise RuntimeError(f"Missing dependency: scipy ({e}). Install: pip install scipy") from e
+
+    out_png.parent.mkdir(parents=True, exist_ok=True)
+
+    d = _load_anchor_scatter_data(features_parquet)
+    d["set_name"] = d["set_name"].astype(str).str.strip()
+
+    sets_order = ["acetate_gradient", "yeast_gradient", "nh4_gradient", "pH_YE_toggle"]
+    colors = {
+        "acetate_gradient": "#d62728",
+        "yeast_gradient": "#2ca02c",
+        "nh4_gradient": "#9467bd",
+        "pH_YE_toggle": "#1f77b4",
+    }
+
+    rng = np.random.default_rng(int(seed))
+
+    def _bootstrap_ci(x: np.ndarray, y: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        x = np.asarray(x, dtype=float)
+        y = np.asarray(y, dtype=float)
+        xgrid = np.linspace(float(np.min(x)), float(np.max(x)), 60)
+        if len(x) < 2 or np.allclose(np.var(x), 0.0):
+            yhat = np.full_like(xgrid, float(np.mean(y)))
+            return xgrid, yhat, yhat, yhat
+        slope, intercept = np.polyfit(x, y, deg=1)
+        yhat = slope * xgrid + intercept
+        preds = []
+        n = len(x)
+        for _ in range(int(n_boot)):
+            idx = rng.integers(0, n, size=n)
+            xb = x[idx]
+            yb = y[idx]
+            if np.allclose(np.var(xb), 0.0):
+                continue
+            b1, b0 = np.polyfit(xb, yb, deg=1)
+            preds.append(b1 * xgrid + b0)
+        if not preds:
+            return xgrid, yhat, yhat, yhat
+        arr = np.stack(preds, axis=0)
+        lo = np.percentile(arr, 2.5, axis=0)
+        hi = np.percentile(arr, 97.5, axis=0)
+        return xgrid, yhat, lo, hi
+
+    fig, axes = plt.subplots(2, 2, figsize=(10, 7))
+    axes = axes.reshape(-1)
+
+    for i, ax in enumerate(axes):
+        if i >= len(sets_order):
+            ax.axis("off")
+            continue
+        s = sets_order[i]
+        dd = d[d["set_name"] == s].copy()
+        if len(dd) == 0:
+            ax.axis("off")
+            continue
+
+        x = dd["objective_value"].to_numpy()
+        y = dd["measured_OD"].to_numpy()
+
+        # X variance / saturation check
+        x_var = float(np.var(x)) if len(x) else float("nan")
+        x_range = float(np.max(x) - np.min(x)) if len(x) else float("nan")
+        is_saturation = (np.isfinite(x_range) and x_range < 1e-6) or (np.isfinite(x_var) and x_var < 1e-12)
+
+        # correlations (avoid scipy warnings on constant inputs)
+        pr = float("nan")
+        sr = float("nan")
+        if len(dd) >= 2 and not is_saturation:
+            pr = float(pearsonr(x, y)[0])
+            sr = float(spearmanr(x, y)[0])
+
+        c = colors.get(s, "#444444")
+        ax.scatter(x, y, s=55, alpha=0.75, color=c, edgecolors="none")
+
+        xgrid, yhat, lo, hi = _bootstrap_ci(x, y)
+        lw = 3.0 if s == "acetate_gradient" else 2.0
+        ax.plot(xgrid, yhat, color=c, lw=lw)
+        ax.fill_between(xgrid, lo, hi, color=c, alpha=0.18, linewidth=0)
+
+        ax.set_title(s, fontsize=12)
+        ax.set_xlabel("Model prediction (objective value)")
+        ax.set_ylabel("Measured OD600 at 32 h")
+        ax.grid(True, alpha=0.25)
+
+        if s == "acetate_gradient":
+            ax.text(
+                0.98,
+                0.02,
+                f"Spearman ρ={sr:.2f}",
+                transform=ax.transAxes,
+                ha="right",
+                va="bottom",
+                fontsize=12,
+                fontweight="bold",
+                bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="0.7", alpha=0.9),
+            )
+        else:
+            ax.text(
+                0.98,
+                0.02,
+                f"Pearson R={pr:.2f}\nSpearman ρ={sr:.2f}",
+                transform=ax.transAxes,
+                ha="right",
+                va="bottom",
+                fontsize=10,
+                bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="0.7", alpha=0.9),
+            )
+
+        if s in {"yeast_gradient", "nh4_gradient"} and is_saturation:
+            ax.text(
+                0.02,
+                0.02,
+                "Model saturation observed",
+                transform=ax.transAxes,
+                ha="left",
+                va="bottom",
+                fontsize=10,
+                style="italic",
+                color="#333333",
+            )
+
+    fig.suptitle("Set-wise correlation (single best run)", fontsize=14)
+    fig.tight_layout(rect=[0, 0, 1, 0.95])
+    fig.savefig(out_png, dpi=260, bbox_inches="tight")
+    plt.close(fig)
+
+
 def _plot_od_vs_severity_scatter(
     df: pd.DataFrame,
     *,
@@ -1506,6 +1689,12 @@ def main(argv: list[str] | None = None) -> int:
         help="Optional override for Fig02E AFTER (calibrated objective vs OD). Defaults to C6_atpm_calibrated run if available.",
     )
     parser.add_argument(
+        "--best-run-features",
+        default=None,
+        help="Single-run features.parquet for Fig02E_best_run_correlation (no mixing across campaigns). "
+        "If omitted, tries C6 calibrated run under extracted results_root, then C3 baseline.",
+    )
+    parser.add_argument(
         "--anchor-color-by-set",
         action="store_true",
         help="Color Fig02E scatter points by set_name (adds legend).",
@@ -1663,6 +1852,15 @@ def main(argv: list[str] | None = None) -> int:
         n_boot=1000,
     )
 
+    # Fig02E (best run only): do NOT mix across campaigns; use a single run's features.parquet
+    best_features = _resolve_best_run_features_parquet(results_root, args.best_run_features)
+    _plot_best_run_set_panels(
+        features_parquet=best_features,
+        out_png=figures_out / "Fig02E_best_run_correlation.png",
+        seed=42,
+        n_boot=1000,
+    )
+
     # Fig02: re-draw without run_id legend (primary_regime colors only)
     _plot_regime_map_primary_only(src_regime_map_csv, figures_out / "Fig02_regime_map.png")
 
@@ -1677,70 +1875,74 @@ def main(argv: list[str] | None = None) -> int:
     )
 
     # Fig02E before/after (objective vs OD; Spearman rho) for ATPM calibration evaluation
-    before_features = _resolve_anchor_features_parquet(results_root, args.before_features)
-    after_features = _resolve_calibrated_features_parquet(results_root, args.after_features)
-    before_df = _load_anchor_scatter_data(before_features)
-    after_df = _load_anchor_scatter_data(after_features)
-    before_df.to_csv(figures_out / "Fig02E_before_objective_vs_OD_data.csv", index=False)
-    after_df.to_csv(figures_out / "Fig02E_after_calibObjective_vs_OD_data.csv", index=False)
-
-    # Also save a joined table (condition_id-aligned) for easy downstream analysis.
-    joined = before_df.merge(
-        after_df[["condition_id", "objective_value"]].rename(columns={"objective_value": "objective_value_after"}),
-        on="condition_id",
-        how="inner",
-    ).rename(columns={"objective_value": "objective_value_before"})
-    joined.to_csv(figures_out / "Fig02E_before_after_join.csv", index=False)
-
-    rho_before = _plot_anchor_scatter(
-        features_parquet=before_features,
-        out_png=figures_out / "Fig02E_before_objective_vs_OD.png",
-        out_csv=None,
-        color_by_set=False,
-        figsize=(6, 4),
-    )
-    rho_after = _plot_anchor_scatter(
-        features_parquet=after_features,
-        out_png=figures_out / "Fig02E_after_calibObjective_vs_OD.png",
-        out_csv=None,
-        color_by_set=False,
-        figsize=(6, 4),
-    )
-    (figures_out / "Fig02E_rho_compare.txt").write_text(
-        f"rho_before={rho_before:.6g}\n" f"rho_after={rho_after:.6g}\n",
-        encoding="utf-8",
-    )
-
-    # Fig02E: ATPM calibration evaluation on acetate-gradient subset only (train/test split)
-    # - subset: set_name == acetate_gradient
-    # - train anchors: AC_25, AC_150
-    # - test: AC_50, AC_100
+    # Optional: skip if calibrated run features.parquet is not available locally/extracted.
     try:
-        subset = after_df[after_df["set_name"] == "acetate_gradient"].copy()
-        train_ids = {"AC_25", "AC_150"}
-        test_ids = {"AC_50", "AC_100"}
+        before_features = _resolve_anchor_features_parquet(results_root, args.before_features)
+        after_features = _resolve_calibrated_features_parquet(results_root, args.after_features)
+        before_df = _load_anchor_scatter_data(before_features)
+        after_df = _load_anchor_scatter_data(after_features)
+        before_df.to_csv(figures_out / "Fig02E_before_objective_vs_OD_data.csv", index=False)
+        after_df.to_csv(figures_out / "Fig02E_after_calibObjective_vs_OD_data.csv", index=False)
 
-        df_train = subset[subset["condition_id"].isin(train_ids)].copy()
-        df_test = subset[subset["condition_id"].isin(test_ids)].copy()
+        # Also save a joined table (condition_id-aligned) for easy downstream analysis.
+        joined = before_df.merge(
+            after_df[["condition_id", "objective_value"]].rename(columns={"objective_value": "objective_value_after"}),
+            on="condition_id",
+            how="inner",
+        ).rename(columns={"objective_value": "objective_value_before"})
+        joined.to_csv(figures_out / "Fig02E_before_after_join.csv", index=False)
 
-        rho_train = _plot_scatter_from_df(
-            df_train,
-            out_png=figures_out / "Fig02E_acetate_train.png",
-            title="Acetate-gradient (train anchors)",
+        rho_before = _plot_anchor_scatter(
+            features_parquet=before_features,
+            out_png=figures_out / "Fig02E_before_objective_vs_OD.png",
+            out_csv=None,
+            color_by_set=False,
             figsize=(6, 4),
         )
-        rho_test = _plot_scatter_from_df(
-            df_test,
-            out_png=figures_out / "Fig02E_acetate_test.png",
-            title="Acetate-gradient (test)",
+        rho_after = _plot_anchor_scatter(
+            features_parquet=after_features,
+            out_png=figures_out / "Fig02E_after_calibObjective_vs_OD.png",
+            out_csv=None,
+            color_by_set=False,
             figsize=(6, 4),
         )
-        (figures_out / "Fig02E_acetate_train_test_metrics.txt").write_text(
-            f"rho_train={rho_train:.6g}\n" f"rho_test={rho_test:.6g}\n",
+        (figures_out / "Fig02E_rho_compare.txt").write_text(
+            f"rho_before={rho_before:.6g}\n" f"rho_after={rho_after:.6g}\n",
             encoding="utf-8",
         )
-    except Exception as e:
-        print(f"[WARN] Skipping Fig02E acetate train/test outputs: {e}")
+
+        # Fig02E: ATPM calibration evaluation on acetate-gradient subset only (train/test split)
+        # - subset: set_name == acetate_gradient
+        # - train anchors: AC_25, AC_150
+        # - test: AC_50, AC_100
+        try:
+            subset = after_df[after_df["set_name"] == "acetate_gradient"].copy()
+            train_ids = {"AC_25", "AC_150"}
+            test_ids = {"AC_50", "AC_100"}
+
+            df_train = subset[subset["condition_id"].isin(train_ids)].copy()
+            df_test = subset[subset["condition_id"].isin(test_ids)].copy()
+
+            rho_train = _plot_scatter_from_df(
+                df_train,
+                out_png=figures_out / "Fig02E_acetate_train.png",
+                title="Acetate-gradient (train anchors)",
+                figsize=(6, 4),
+            )
+            rho_test = _plot_scatter_from_df(
+                df_test,
+                out_png=figures_out / "Fig02E_acetate_test.png",
+                title="Acetate-gradient (test)",
+                figsize=(6, 4),
+            )
+            (figures_out / "Fig02E_acetate_train_test_metrics.txt").write_text(
+                f"rho_train={rho_train:.6g}\n" f"rho_test={rho_test:.6g}\n",
+                encoding="utf-8",
+            )
+        except Exception as e:
+            print(f"[WARN] Skipping Fig02E acetate train/test outputs: {e}")
+    except FileNotFoundError as e:
+        print(f"[WARN] Skipping Fig02E before/after calibration plots: {e}")
 
     # Fig03/04: re-draw beeswarm with max_display=15 and figsize=(10,5)
     X_feat = _load_feature_matrix_regime_dataset(src_regime_dataset, seed=42, max_rows=2000)
