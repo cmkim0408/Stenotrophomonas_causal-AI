@@ -964,6 +964,284 @@ def _plot_regime_box_jitter_v2(
     plt.close(fig)
 
 
+def _load_regime_dataset_normalized(regime_dataset_parquet: Path) -> pd.DataFrame:
+    """
+    Normalize regime_dataset.parquet into a consistent schema:
+      - primary_regime (from primary_regime or label)
+      - measured_OD (from measured_OD or measured_OD_y/x)
+      - maintenance_severity (use existing if present; else compute from objective_value/run_id when possible)
+    Keeps feature columns (width__/mid__/signchange__) if present.
+    """
+    df = pd.read_parquet(regime_dataset_parquet)
+
+    def _pick_col(_df: pd.DataFrame, candidates: list[str]) -> str | None:
+        for c in candidates:
+            if c in _df.columns:
+                return c
+        return None
+
+    regime_col = _pick_col(df, ["primary_regime", "label"])
+    od_col = _pick_col(df, ["measured_OD", "measured_OD_y", "measured_OD_x"])
+    run_col = _pick_col(df, ["run_id"])
+    cond_col = _pick_col(df, ["condition_id"])
+
+    if regime_col is None:
+        raise ValueError("regime_dataset.parquet missing regime column (expected primary_regime or label)")
+    if od_col is None:
+        raise ValueError("regime_dataset.parquet missing OD column (expected measured_OD or measured_OD_y/x)")
+
+    out = df.copy()
+    out["primary_regime"] = out[regime_col].astype(str).str.strip()
+    out["measured_OD"] = pd.to_numeric(out[od_col], errors="coerce")
+
+    if "maintenance_severity" in out.columns:
+        out["maintenance_severity"] = pd.to_numeric(out["maintenance_severity"], errors="coerce")
+    else:
+        if "objective_value" in out.columns and run_col is not None:
+            obj = pd.to_numeric(out["objective_value"], errors="coerce")
+            out["_obj"] = obj
+            max_by_run = out.groupby(run_col, dropna=False)["_obj"].transform("max")
+            out["maintenance_severity"] = out["_obj"] / max_by_run
+            out.loc[~np.isfinite(out["maintenance_severity"]), "maintenance_severity"] = np.nan
+            out.drop(columns=["_obj"], inplace=True)
+        else:
+            out["maintenance_severity"] = np.nan
+
+    if run_col is not None and run_col != "run_id":
+        out["run_id"] = out[run_col].astype(str)
+    if cond_col is not None and cond_col != "condition_id":
+        out["condition_id"] = out[cond_col].astype(str)
+
+    return out
+
+
+def _plot_od_vs_severity_scatter(
+    df: pd.DataFrame,
+    *,
+    out_png: Path,
+    figsize: tuple[int, int] = (6, 4),
+) -> float:
+    """
+    Fig02D: measured_OD vs maintenance_severity scatter + Spearman rho.
+    Returns rho (float).
+    """
+    import matplotlib
+
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    try:
+        from scipy.stats import spearmanr
+    except Exception as e:  # noqa: BLE001
+        raise RuntimeError(f"Missing dependency: scipy ({e}). Install: pip install scipy") from e
+
+    out_png.parent.mkdir(parents=True, exist_ok=True)
+
+    d = df.copy()
+    d["measured_OD"] = pd.to_numeric(d["measured_OD"], errors="coerce")
+    d["maintenance_severity"] = pd.to_numeric(d["maintenance_severity"], errors="coerce")
+    d = d.dropna(subset=["measured_OD", "maintenance_severity"]).copy()
+    if len(d) < 2:
+        raise ValueError("Not enough rows with measured_OD and maintenance_severity to plot Fig02D.")
+
+    rho, _p = spearmanr(d["maintenance_severity"].to_numpy(), d["measured_OD"].to_numpy())
+    rho = float(rho)
+
+    fig, ax = plt.subplots(figsize=figsize)
+    ax.scatter(d["maintenance_severity"], d["measured_OD"], s=26, alpha=0.55, edgecolors="none")
+    ax.set_xlabel("Maintenance severity (objective / run max)")
+    ax.set_ylabel("Measured OD600 at 32 h")
+    ax.set_title("Measured OD vs maintenance severity", fontsize=12)
+    ax.grid(True, alpha=0.25)
+    ax.text(0.98, 0.98, f"Spearman ρ = {rho:.2f}", transform=ax.transAxes, ha="right", va="top")
+    fig.tight_layout()
+    fig.savefig(out_png, dpi=260, bbox_inches="tight")
+    plt.close(fig)
+    return rho
+
+
+def _train_od_low_classifier_and_report(
+    df: pd.DataFrame,
+    *,
+    out_shap_png: Path,
+    out_metrics_csv: Path,
+    out_report_csv: Path,
+    od_threshold: float = 0.6,
+    seed: int = 42,
+) -> None:
+    """
+    OD_low classifier (OD < threshold) with a SHAP-like explanation plot.
+
+    Practical note: We compute "SHAP-like" per-feature contributions for a linear model:
+      contrib = (x - mean_train) * coef
+    and plot mean(|contrib|) across test samples (bar plot).
+    """
+    from sklearn.linear_model import LogisticRegression
+    from sklearn.metrics import accuracy_score, roc_auc_score
+    from sklearn.model_selection import train_test_split
+    from sklearn.pipeline import Pipeline
+    from sklearn.preprocessing import StandardScaler
+
+    out_shap_png.parent.mkdir(parents=True, exist_ok=True)
+    out_metrics_csv.parent.mkdir(parents=True, exist_ok=True)
+    out_report_csv.parent.mkdir(parents=True, exist_ok=True)
+
+    # Aggregate to condition-level (22 conditions): stabilize across multiple runs
+    feat_cols = [c for c in df.columns if c.startswith(("width__", "mid__", "signchange__"))]
+    base_cols = ["condition_id", "measured_OD", "primary_regime", "maintenance_severity"]
+    have = [c for c in base_cols if c in df.columns]
+
+    d0 = df[have + feat_cols].copy()
+    d0["measured_OD"] = pd.to_numeric(d0["measured_OD"], errors="coerce")
+    d0["maintenance_severity"] = pd.to_numeric(d0["maintenance_severity"], errors="coerce")
+
+    # groupby condition_id: OD is constant; severity/feats use median/mean
+    agg = {"measured_OD": "mean", "maintenance_severity": "median", "primary_regime": lambda s: s.dropna().astype(str).mode().iloc[0] if len(s.dropna()) else ""}
+    for c in feat_cols:
+        agg[c] = "mean"
+    d = d0.groupby("condition_id", dropna=False).agg(agg).reset_index()
+
+    # Label
+    d["OD_low"] = (d["measured_OD"] < float(od_threshold)).astype(int)
+
+    # Pick a small feature set: severity + top correlated features with OD_low
+    cand_cols = ["maintenance_severity"] + feat_cols
+    X_all = d[cand_cols].copy()
+    for c in X_all.columns:
+        X_all[c] = pd.to_numeric(X_all[c], errors="coerce")
+    X_all = X_all.fillna(0.0)
+    y_all = d["OD_low"].astype(int).to_numpy()
+
+    # Correlation-based selection (simple + stable)
+    corrs = []
+    y_center = y_all - float(np.mean(y_all))
+    for c in X_all.columns:
+        x = X_all[c].to_numpy()
+        x_center = x - float(np.mean(x))
+        denom = float(np.sqrt(np.sum(x_center**2) * np.sum(y_center**2)))
+        corr = float(np.sum(x_center * y_center) / denom) if denom > 0 else 0.0
+        corrs.append((abs(corr), c))
+    corrs.sort(reverse=True)
+    topk = 8  # keep small for interpretability
+    selected = []
+    for _a, c in corrs:
+        if c == "maintenance_severity":
+            continue
+        selected.append(c)
+        if len(selected) >= topk:
+            break
+    feature_cols = ["maintenance_severity"] + selected
+
+    X = X_all[feature_cols].copy()
+
+    # Split by conditions (22 rows): stratified if possible
+    test_size = 0.3 if len(d) >= 10 else 0.2
+    X_train, X_test, y_train, y_test, idx_train, idx_test = train_test_split(
+        X,
+        y_all,
+        np.arange(len(d)),
+        test_size=float(test_size),
+        random_state=int(seed),
+        stratify=y_all if len(np.unique(y_all)) > 1 else None,
+    )
+
+    pipe = Pipeline(
+        steps=[
+            ("scaler", StandardScaler()),
+            ("clf", LogisticRegression(max_iter=5000, random_state=int(seed))),
+        ]
+    )
+    pipe.fit(X_train, y_train)
+    proba = pipe.predict_proba(X_test)[:, 1]
+    pred = (proba >= 0.5).astype(int)
+
+    auc = float("nan")
+    if len(np.unique(y_test)) > 1:
+        auc = float(roc_auc_score(y_test, proba))
+    acc = float(accuracy_score(y_test, pred))
+
+    pd.DataFrame(
+        [
+            {
+                "auc": auc,
+                "acc": acc,
+                "n_conditions": int(len(d)),
+                "n_train": int(len(y_train)),
+                "n_test": int(len(y_test)),
+                "od_threshold": float(od_threshold),
+                "features_used": ";".join(feature_cols),
+            }
+        ]
+    ).to_csv(out_metrics_csv, index=False)
+
+    # SHAP-like contributions on test set: (x - mean_train) * coef (in standardized space -> use pipeline pieces)
+    scaler: StandardScaler = pipe.named_steps["scaler"]
+    clf: LogisticRegression = pipe.named_steps["clf"]
+    X_train_z = scaler.transform(X_train)
+    X_test_z = scaler.transform(X_test)
+
+    coef = clf.coef_.reshape(-1)  # (F,)
+    mu_train = np.mean(X_train_z, axis=0)
+    contrib = (X_test_z - mu_train) * coef  # (N,F)
+    mean_abs = np.mean(np.abs(contrib), axis=0)
+
+    order = np.argsort(mean_abs)[::-1]
+    topn = min(10, len(feature_cols))
+    top_idx = order[:topn]
+    top_feats = [feature_cols[i] for i in top_idx]
+    top_vals = mean_abs[top_idx]
+
+    # Plot bar (paper-friendly, no legend explosion)
+    import matplotlib
+
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    fig, ax = plt.subplots(figsize=(9, 4.8))
+    y_pos = np.arange(len(top_feats))[::-1]
+    ax.barh(y_pos, top_vals[::-1], color="#4c72b0", alpha=0.85)
+    ax.set_yticks(y_pos)
+    ax.set_yticklabels(top_feats[::-1], fontsize=9)
+    ax.set_xlabel("Mean |contribution| (SHAP-like, logistic)")
+    ax.set_title("OD_low classifier: top feature contributions", fontsize=12)
+    ax.text(0.98, 0.02, f"AUC={auc:.2f}, Acc={acc:.2f}", transform=ax.transAxes, ha="right", va="bottom", fontsize=10)
+    fig.tight_layout()
+    fig.savefig(out_shap_png, dpi=260, bbox_inches="tight")
+    plt.close(fig)
+
+    # Build 22-condition diagnosis report (fit final model on ALL conditions for stable per-condition contributions)
+    pipe.fit(X, y_all)
+    scaler2: StandardScaler = pipe.named_steps["scaler"]
+    clf2: LogisticRegression = pipe.named_steps["clf"]
+    # Keep feature names (avoid sklearn warning)
+    X_z = scaler2.transform(X)
+    coef2 = clf2.coef_.reshape(-1)
+    mu2 = np.mean(X_z, axis=0)
+    contrib_all = (X_z - mu2) * coef2  # (22,F)
+
+    sev = pd.to_numeric(d["maintenance_severity"], errors="coerce")
+    sev_pct = sev.rank(pct=True) * 100.0
+
+    top5_list = []
+    for i in range(len(d)):
+        row = contrib_all[i, :]
+        idx = np.argsort(np.abs(row))[::-1][:5]
+        items = [f"{feature_cols[j]}={row[j]:.3g}" for j in idx]
+        top5_list.append(";".join(items))
+
+    report = pd.DataFrame(
+        {
+            "condition_id": d["condition_id"].astype(str),
+            "measured_OD": d["measured_OD"].astype(float),
+            "primary_regime": d["primary_regime"].astype(str),
+            "maintenance_severity": sev.astype(float),
+            "severity_percentile": sev_pct.astype(float),
+            "top5_shap_features": top5_list,
+        }
+    )
+    report.to_csv(out_report_csv, index=False)
+
+
 def _plot_shap_beeswarm_from_saved_model(
     *,
     model_json: Path,
@@ -1207,6 +1485,22 @@ def main(argv: list[str] | None = None) -> int:
         o2_subsample_n=50,
         seed=42,
         figsize=(10, 5),
+    )
+
+    # Fig02D + Fig02E + diagnosis report (diagnostic, not OD prediction)
+    reg_norm = _load_regime_dataset_normalized(src_regime_dataset)
+    _plot_od_vs_severity_scatter(
+        reg_norm,
+        out_png=figures_out / "Fig02D_OD_vs_severity.png",
+        figsize=(6, 4),
+    )
+    _train_od_low_classifier_and_report(
+        reg_norm,
+        out_shap_png=figures_out / "Fig02E_low_growth_classifier_shap.png",
+        out_metrics_csv=figures_out / "OD_low_metrics.csv",
+        out_report_csv=figures_out / "diagnosis_report_22conds.csv",
+        od_threshold=0.6,
+        seed=42,
     )
 
     # Fig02: re-draw without run_id legend (primary_regime colors only)
