@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import argparse
 import shutil
 from pathlib import Path
 
@@ -286,6 +287,102 @@ def _plot_regime_map_primary_only(regime_map_csv: Path, out_png: Path) -> None:
     plt.close(fig)
 
 
+def _resolve_anchor_features_parquet(results_root: Path, override_path: str | None) -> Path:
+    if override_path:
+        p = Path(override_path)
+        if p.exists():
+            return p
+        raise FileNotFoundError(f"--anchor-features not found: {p}")
+
+    # Preferred baseline run (as provided in the request)
+    preferred = results_root / "campaigns" / "C3_o2_mid" / "run__acFree__o2lb-50__nh4cap-100" / "features.parquet"
+    if preferred.exists():
+        return preferred
+
+    # Fallback: pick the first available features.parquet under campaigns/
+    campaigns = results_root / "campaigns"
+    if campaigns.exists():
+        for p in campaigns.rglob("features.parquet"):
+            return p
+
+    raise FileNotFoundError(f"No features.parquet found under: {campaigns}")
+
+
+def _plot_anchor_scatter(
+    *,
+    features_parquet: Path,
+    out_png: Path,
+    out_csv: Path,
+    color_by_set: bool = False,
+    figsize: tuple[int, int] = (6, 4),
+) -> None:
+    import matplotlib
+
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    try:
+        from scipy.stats import spearmanr
+    except Exception as e:  # noqa: BLE001
+        raise RuntimeError(f"Missing dependency: scipy ({e}). Install: pip install scipy") from e
+
+    out_png.parent.mkdir(parents=True, exist_ok=True)
+    out_csv.parent.mkdir(parents=True, exist_ok=True)
+
+    df = pd.read_parquet(features_parquet)
+    need = {"condition_id", "measured_OD", "set_name"}
+    missing = sorted(need - set(df.columns))
+    if missing:
+        raise ValueError(f"features.parquet missing required columns: {missing}")
+
+    d = df[list(need)].copy()
+
+    # objective_value may not be present in features.parquet (wide feature matrix).
+    # If missing, merge from sibling regime_fba.parquet in the same run folder.
+    if "objective_value" in df.columns:
+        d["objective_value"] = pd.to_numeric(df["objective_value"], errors="coerce")
+    else:
+        regime_fba = features_parquet.parent / "regime_fba.parquet"
+        if not regime_fba.exists():
+            raise ValueError(
+                "features.parquet does not contain objective_value, and sibling regime_fba.parquet not found at: "
+                f"{regime_fba}"
+            )
+        rf = pd.read_parquet(regime_fba, columns=["condition_id", "objective_value"])
+        rf["objective_value"] = pd.to_numeric(rf["objective_value"], errors="coerce")
+        d = d.merge(rf, on="condition_id", how="left")
+
+    d["measured_OD"] = pd.to_numeric(d["measured_OD"], errors="coerce")
+    d["set_name"] = d["set_name"].astype(str)
+    d = d.dropna(subset=["objective_value", "measured_OD"]).copy()
+
+    rho = float("nan")
+    if len(d) >= 2:
+        rho, _p = spearmanr(d["objective_value"].to_numpy(), d["measured_OD"].to_numpy())
+        rho = float(rho)
+
+    # Save data used for plotting
+    d[["condition_id", "objective_value", "measured_OD", "set_name"]].to_csv(out_csv, index=False)
+
+    fig, ax = plt.subplots(figsize=figsize)
+    if color_by_set:
+        sets = sorted(d["set_name"].unique().tolist())
+        for s in sets:
+            dd = d[d["set_name"] == s]
+            ax.scatter(dd["objective_value"], dd["measured_OD"], s=28, alpha=0.85, label=s)
+        ax.legend(title="set_name", fontsize=8, title_fontsize=9, loc="best", frameon=True)
+    else:
+        ax.scatter(d["objective_value"], d["measured_OD"], s=28, alpha=0.85)
+
+    ax.set_xlabel("Predicted growth (FBA objective)")
+    ax.set_ylabel("Measured OD600 at 32 h")
+    ax.grid(True, alpha=0.25)
+    ax.text(0.98, 0.98, f"Spearman ρ = {rho:.2f}", transform=ax.transAxes, ha="right", va="top")
+    fig.tight_layout()
+    fig.savefig(out_png, dpi=220, bbox_inches="tight")
+    plt.close(fig)
+
+
 def _load_feature_matrix_regime_dataset(regime_dataset_parquet: Path, *, seed: int = 42, max_rows: int = 2000) -> pd.DataFrame:
     """
     Load X feature matrix from regime_dataset.parquet:
@@ -397,7 +494,21 @@ def _rewrite_png_with_figsize(src_png: Path, out_png: Path, figsize: tuple[int, 
     plt.close()
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description="Generate draft paper figures from extracted results.")
+    parser.add_argument(
+        "--anchor-features",
+        default=None,
+        help="Path to baseline run features.parquet for Fig02E anchor scatter. "
+        "If omitted, tries the default C3_o2_mid baseline run, then falls back to the first campaigns/**/features.parquet.",
+    )
+    parser.add_argument(
+        "--anchor-color-by-set",
+        action="store_true",
+        help="Color Fig02E scatter points by set_name (adds legend).",
+    )
+    args = parser.parse_args(argv)
+
     results_root = _find_results_root()
 
     # New outputs only
@@ -446,6 +557,16 @@ def main() -> int:
 
     # Fig02: re-draw without run_id legend (primary_regime colors only)
     _plot_regime_map_primary_only(src_regime_map_csv, figures_out / "Fig02_regime_map.png")
+
+    # Fig02E: anchor scatter (objective_value vs measured_OD; Spearman rho)
+    anchor_features = _resolve_anchor_features_parquet(results_root, args.anchor_features)
+    _plot_anchor_scatter(
+        features_parquet=anchor_features,
+        out_png=figures_out / "Fig02E_anchor_scatter.png",
+        out_csv=figures_out / "Fig02E_anchor_scatter_data.csv",
+        color_by_set=bool(args.anchor_color_by_set),
+        figsize=(6, 4),
+    )
 
     # Fig03/04: re-draw beeswarm with max_display=15 and figsize=(10,5)
     X_feat = _load_feature_matrix_regime_dataset(src_regime_dataset, seed=42, max_rows=2000)
