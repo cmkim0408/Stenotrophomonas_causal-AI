@@ -308,14 +308,32 @@ def _resolve_anchor_features_parquet(results_root: Path, override_path: str | No
     raise FileNotFoundError(f"No features.parquet found under: {campaigns}")
 
 
+def _resolve_calibrated_features_parquet(results_root: Path, override_path: str | None) -> Path:
+    if override_path:
+        p = Path(override_path)
+        if p.exists():
+            return p
+        raise FileNotFoundError(f"--after-features not found: {p}")
+
+    preferred = results_root / "campaigns" / "C6_atpm_calibrated" / "run__atpmCalib_linear" / "features.parquet"
+    if preferred.exists():
+        return preferred
+
+    raise FileNotFoundError(
+        "Calibrated run features.parquet not found. "
+        "Expected: results/campaigns/C6_atpm_calibrated/run__atpmCalib_linear/features.parquet "
+        "(under extracted results_root). You can also pass --after-features explicitly."
+    )
+
+
 def _plot_anchor_scatter(
     *,
     features_parquet: Path,
     out_png: Path,
-    out_csv: Path,
+    out_csv: Path | None,
     color_by_set: bool = False,
     figsize: tuple[int, int] = (6, 4),
-) -> None:
+) -> float:
     import matplotlib
 
     matplotlib.use("Agg")
@@ -327,7 +345,8 @@ def _plot_anchor_scatter(
         raise RuntimeError(f"Missing dependency: scipy ({e}). Install: pip install scipy") from e
 
     out_png.parent.mkdir(parents=True, exist_ok=True)
-    out_csv.parent.mkdir(parents=True, exist_ok=True)
+    if out_csv is not None:
+        out_csv.parent.mkdir(parents=True, exist_ok=True)
 
     df = pd.read_parquet(features_parquet)
     need = {"condition_id", "measured_OD", "set_name"}
@@ -362,7 +381,8 @@ def _plot_anchor_scatter(
         rho = float(rho)
 
     # Save data used for plotting
-    d[["condition_id", "objective_value", "measured_OD", "set_name"]].to_csv(out_csv, index=False)
+    if out_csv is not None:
+        d[["condition_id", "objective_value", "measured_OD", "set_name"]].to_csv(out_csv, index=False)
 
     fig, ax = plt.subplots(figsize=figsize)
     if color_by_set:
@@ -381,6 +401,7 @@ def _plot_anchor_scatter(
     fig.tight_layout()
     fig.savefig(out_png, dpi=220, bbox_inches="tight")
     plt.close(fig)
+    return rho
 
 
 def _load_feature_matrix_regime_dataset(regime_dataset_parquet: Path, *, seed: int = 42, max_rows: int = 2000) -> pd.DataFrame:
@@ -503,6 +524,16 @@ def main(argv: list[str] | None = None) -> int:
         "If omitted, tries the default C3_o2_mid baseline run, then falls back to the first campaigns/**/features.parquet.",
     )
     parser.add_argument(
+        "--before-features",
+        default=None,
+        help="Optional override for Fig02E BEFORE (objective vs OD). Defaults to the baseline C3_o2_mid run if available.",
+    )
+    parser.add_argument(
+        "--after-features",
+        default=None,
+        help="Optional override for Fig02E AFTER (calibrated objective vs OD). Defaults to C6_atpm_calibrated run if available.",
+    )
+    parser.add_argument(
         "--anchor-color-by-set",
         action="store_true",
         help="Color Fig02E scatter points by set_name (adds legend).",
@@ -558,7 +589,7 @@ def main(argv: list[str] | None = None) -> int:
     # Fig02: re-draw without run_id legend (primary_regime colors only)
     _plot_regime_map_primary_only(src_regime_map_csv, figures_out / "Fig02_regime_map.png")
 
-    # Fig02E: anchor scatter (objective_value vs measured_OD; Spearman rho)
+    # Fig02E: anchor scatter (legacy single panel output)
     anchor_features = _resolve_anchor_features_parquet(results_root, args.anchor_features)
     _plot_anchor_scatter(
         features_parquet=anchor_features,
@@ -566,6 +597,28 @@ def main(argv: list[str] | None = None) -> int:
         out_csv=figures_out / "Fig02E_anchor_scatter_data.csv",
         color_by_set=bool(args.anchor_color_by_set),
         figsize=(6, 4),
+    )
+
+    # Fig02E before/after (objective vs OD; Spearman rho) for ATPM calibration evaluation
+    before_features = _resolve_anchor_features_parquet(results_root, args.before_features)
+    after_features = _resolve_calibrated_features_parquet(results_root, args.after_features)
+    rho_before = _plot_anchor_scatter(
+        features_parquet=before_features,
+        out_png=figures_out / "Fig02E_before_objective_vs_OD.png",
+        out_csv=None,
+        color_by_set=False,
+        figsize=(6, 4),
+    )
+    rho_after = _plot_anchor_scatter(
+        features_parquet=after_features,
+        out_png=figures_out / "Fig02E_after_calibObjective_vs_OD.png",
+        out_csv=None,
+        color_by_set=False,
+        figsize=(6, 4),
+    )
+    (figures_out / "Fig02E_rho_compare.txt").write_text(
+        f"rho_before={rho_before:.6g}\n" f"rho_after={rho_after:.6g}\n",
+        encoding="utf-8",
     )
 
     # Fig03/04: re-draw beeswarm with max_display=15 and figsize=(10,5)
