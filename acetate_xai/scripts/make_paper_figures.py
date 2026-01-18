@@ -436,6 +436,55 @@ def _load_anchor_scatter_data(features_parquet: Path) -> pd.DataFrame:
     return d[["condition_id", "objective_value", "measured_OD", "set_name"]]
 
 
+def _plot_scatter_from_df(
+    df: pd.DataFrame,
+    *,
+    out_png: Path,
+    title: str | None = None,
+    figsize: tuple[int, int] = (6, 4),
+) -> float:
+    """
+    Plot objective_value vs measured_OD from a prepared dataframe.
+    Required columns: condition_id, objective_value, measured_OD, set_name.
+    """
+    import matplotlib
+
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    try:
+        from scipy.stats import spearmanr
+    except Exception as e:  # noqa: BLE001
+        raise RuntimeError(f"Missing dependency: scipy ({e}). Install: pip install scipy") from e
+
+    if df.empty:
+        raise ValueError("No rows to plot (df is empty).")
+
+    d = df.copy()
+    d["objective_value"] = pd.to_numeric(d["objective_value"], errors="coerce")
+    d["measured_OD"] = pd.to_numeric(d["measured_OD"], errors="coerce")
+    d = d.dropna(subset=["objective_value", "measured_OD"]).copy()
+    if len(d) < 2:
+        raise ValueError("Need at least 2 valid rows to compute Spearman rho.")
+
+    rho, _p = spearmanr(d["objective_value"].to_numpy(), d["measured_OD"].to_numpy())
+    rho = float(rho)
+
+    fig, ax = plt.subplots(figsize=figsize)
+    ax.scatter(d["objective_value"], d["measured_OD"], s=28, alpha=0.85)
+    ax.set_xlabel("Predicted growth (FBA objective)")
+    ax.set_ylabel("Measured OD600 at 32 h")
+    if title:
+        ax.set_title(title)
+    ax.grid(True, alpha=0.25)
+    ax.text(0.98, 0.98, f"Spearman ρ = {rho:.2f}", transform=ax.transAxes, ha="right", va="top")
+    fig.tight_layout()
+    out_png.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(out_png, dpi=220, bbox_inches="tight")
+    plt.close(fig)
+    return rho
+
+
 def _load_feature_matrix_regime_dataset(regime_dataset_parquet: Path, *, seed: int = 42, max_rows: int = 2000) -> pd.DataFrame:
     """
     Load X feature matrix from regime_dataset.parquet:
@@ -665,6 +714,37 @@ def main(argv: list[str] | None = None) -> int:
         f"rho_before={rho_before:.6g}\n" f"rho_after={rho_after:.6g}\n",
         encoding="utf-8",
     )
+
+    # Fig02E: ATPM calibration evaluation on acetate-gradient subset only (train/test split)
+    # - subset: set_name == acetate_gradient
+    # - train anchors: AC_25, AC_150
+    # - test: AC_50, AC_100
+    try:
+        subset = after_df[after_df["set_name"] == "acetate_gradient"].copy()
+        train_ids = {"AC_25", "AC_150"}
+        test_ids = {"AC_50", "AC_100"}
+
+        df_train = subset[subset["condition_id"].isin(train_ids)].copy()
+        df_test = subset[subset["condition_id"].isin(test_ids)].copy()
+
+        rho_train = _plot_scatter_from_df(
+            df_train,
+            out_png=figures_out / "Fig02E_acetate_train.png",
+            title="Acetate-gradient (train anchors)",
+            figsize=(6, 4),
+        )
+        rho_test = _plot_scatter_from_df(
+            df_test,
+            out_png=figures_out / "Fig02E_acetate_test.png",
+            title="Acetate-gradient (test)",
+            figsize=(6, 4),
+        )
+        (figures_out / "Fig02E_acetate_train_test_metrics.txt").write_text(
+            f"rho_train={rho_train:.6g}\n" f"rho_test={rho_test:.6g}\n",
+            encoding="utf-8",
+        )
+    except Exception as e:
+        print(f"[WARN] Skipping Fig02E acetate train/test outputs: {e}")
 
     # Fig03/04: re-draw beeswarm with max_display=15 and figsize=(10,5)
     X_feat = _load_feature_matrix_regime_dataset(src_regime_dataset, seed=42, max_rows=2000)
