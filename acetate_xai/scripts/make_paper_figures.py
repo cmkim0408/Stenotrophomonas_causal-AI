@@ -823,6 +823,147 @@ def _plot_regime_vs_od_and_severity(
             d_od = d_od_backup
 
 
+def _save_group_summary(
+    df: pd.DataFrame,
+    *,
+    group_col: str,
+    y_col: str,
+    out_csv: Path,
+    regimes: list[str],
+) -> None:
+    out_csv.parent.mkdir(parents=True, exist_ok=True)
+    rows = []
+    for r in regimes:
+        vals = pd.to_numeric(df.loc[df[group_col] == r, y_col], errors="coerce").dropna()
+        if len(vals) == 0:
+            continue
+        q25 = float(vals.quantile(0.25))
+        q75 = float(vals.quantile(0.75))
+        rows.append(
+            {
+                "primary_regime": r,
+                "n_total": int(len(vals)),
+                "median": float(vals.median()),
+                "q25": q25,
+                "q75": q75,
+                "iqr": float(q75 - q25),
+                "mean": float(vals.mean()),
+                "std": float(vals.std(ddof=1)) if len(vals) >= 2 else float("nan"),
+            }
+        )
+    pd.DataFrame(rows).to_csv(out_csv, index=False)
+
+
+def _plot_regime_box_jitter_v2(
+    df: pd.DataFrame,
+    *,
+    y_col: str,
+    out_png: Path,
+    out_summary_csv: Path,
+    title: str,
+    ylabel: str,
+    xlabel: str,
+    regimes: list[str],
+    caption_not_observed: str | None,
+    o2_subsample_n: int = 50,
+    seed: int = 42,
+    figsize: tuple[int, int] = (10, 5),
+) -> None:
+    import matplotlib
+
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    out_png.parent.mkdir(parents=True, exist_ok=True)
+
+    d = df.copy()
+    d["primary_regime"] = d["primary_regime"].astype(str).str.strip()
+    d[y_col] = pd.to_numeric(d[y_col], errors="coerce")
+    d = d.dropna(subset=["primary_regime", y_col]).copy()
+
+    # restrict to requested regimes, and drop empty regimes from plot
+    d = d[d["primary_regime"].isin(regimes)].copy()
+    present = [r for r in regimes if (d["primary_regime"] == r).any()]
+
+    # Save summary for present regimes only
+    _save_group_summary(d, group_col="primary_regime", y_col=y_col, out_csv=out_summary_csv, regimes=present)
+
+    # Colors (no legend)
+    palette = {
+        "Ac_limited": "#d62728",
+        "O2_limited": "#1f77b4",
+        "N_limited": "#2ca02c",
+    }
+
+    rng = np.random.default_rng(int(seed))
+    positions = np.arange(1, len(present) + 1)
+
+    data = []
+    ns = []
+    for r in present:
+        vals = d.loc[d["primary_regime"] == r, y_col].dropna().to_numpy()
+        data.append(vals)
+        ns.append(int(len(vals)))
+
+    fig, ax = plt.subplots(figsize=figsize)
+    ax.set_title(title, fontsize=13)
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
+    ax.grid(True, axis="y", alpha=0.22)
+
+    bp = ax.boxplot(
+        data,
+        positions=positions,
+        widths=0.65,
+        patch_artist=True,
+        showfliers=False,
+        medianprops=dict(color="black", linewidth=1.3),
+    )
+    for patch, r in zip(bp["boxes"], present):
+        patch.set_facecolor(palette.get(r, "#bbbbbb"))
+        patch.set_alpha(0.28)
+        patch.set_edgecolor("#444444")
+
+    # scatter overlay (subsample only for O2_limited)
+    for i, (r, vals) in enumerate(zip(present, data), start=1):
+        if len(vals) == 0:
+            continue
+        vals_plot = vals
+        if r == "O2_limited" and len(vals) > int(o2_subsample_n):
+            idx = rng.choice(len(vals), size=int(o2_subsample_n), replace=False)
+            vals_plot = vals[idx]
+        xj = i + rng.normal(0, 0.07, size=len(vals_plot))
+        ax.scatter(
+            xj,
+            vals_plot,
+            s=20,
+            alpha=0.35,
+            color=palette.get(r, "#555555"),
+            edgecolors="none",
+        )
+
+    ax.set_xticks(positions)
+    ax.set_xticklabels(present)
+
+    # n labels: show total n (not subsample)
+    finite = pd.to_numeric(d[y_col], errors="coerce").dropna()
+    if len(finite) > 0:
+        y_max = float(finite.max())
+        y_min = float(finite.min())
+        y_span = max(1e-9, y_max - y_min)
+        y_text = y_max + 0.06 * y_span
+        for x, n in zip(positions, ns):
+            ax.text(x, y_text, f"n={n}", ha="center", va="bottom", fontsize=10, color="#333333")
+        ax.set_ylim(y_min - 0.05 * y_span, y_max + 0.16 * y_span)
+
+    if caption_not_observed:
+        fig.text(0.01, 0.01, caption_not_observed, ha="left", va="bottom", fontsize=10, color="#333333")
+
+    fig.tight_layout(rect=[0, 0.03, 1, 1])
+    fig.savefig(out_png, dpi=260, bbox_inches="tight")
+    plt.close(fig)
+
+
 def _plot_shap_beeswarm_from_saved_model(
     *,
     model_json: Path,
@@ -1003,6 +1144,69 @@ def main(argv: list[str] | None = None) -> int:
         out_od_png=figures_out / "Fig02B_regime_vs_OD.png",
         out_od_csv=figures_out / "Fig02B_regime_vs_OD.csv",
         out_severity_png=figures_out / "Fig02C_regime_vs_severity.png",
+    )
+
+    # Fig02B v2 / Fig02C v2 (paper-ready): 3 regimes only, subsample O2_limited scatter, add caption for non-observed.
+    df_reg = pd.read_parquet(src_regime_dataset)
+    # Normalize columns similar to _plot_regime_vs_od_and_severity
+    def _pick_col(_df: pd.DataFrame, candidates: list[str]) -> str | None:
+        for c in candidates:
+            if c in _df.columns:
+                return c
+        return None
+
+    _regime_col = _pick_col(df_reg, ["primary_regime", "label"])
+    _od_col = _pick_col(df_reg, ["measured_OD", "measured_OD_y", "measured_OD_x"])
+    _run_col = _pick_col(df_reg, ["run_id"])
+    if _regime_col is None or _od_col is None:
+        raise ValueError("regime_dataset.parquet missing regime/OD columns needed for Fig02B v2")
+
+    dv2 = pd.DataFrame(
+        {
+            "primary_regime": df_reg[_regime_col].astype(str).str.strip(),
+            "measured_OD": pd.to_numeric(df_reg[_od_col], errors="coerce"),
+        }
+    )
+    if _run_col is not None and "objective_value" in df_reg.columns:
+        obj = pd.to_numeric(df_reg["objective_value"], errors="coerce")
+        tmp = pd.DataFrame({"run_id": df_reg[_run_col].astype(str), "objective_value": obj})
+        max_by_run = tmp.groupby("run_id", dropna=False)["objective_value"].transform("max")
+        dv2["maintenance_severity"] = obj / max_by_run
+        dv2.loc[~np.isfinite(dv2["maintenance_severity"]), "maintenance_severity"] = np.nan
+    else:
+        dv2["maintenance_severity"] = pd.to_numeric(df_reg.get("maintenance_severity", np.nan), errors="coerce")
+
+    regimes3 = ["Ac_limited", "N_limited", "O2_limited"]
+    caption = "Pi_limited/Unconstrained not observed in current campaigns"
+
+    _plot_regime_box_jitter_v2(
+        dv2,
+        y_col="measured_OD",
+        out_png=figures_out / "Fig02B_regime_vs_OD_v2.png",
+        out_summary_csv=figures_out / "Fig02B_regime_vs_OD_summary.csv",
+        title="Experimental OD vs predicted limiting regime",
+        ylabel="Measured OD600 at 32 h",
+        xlabel="Primary limiting regime (FBA saturation label)",
+        regimes=regimes3,
+        caption_not_observed=caption,
+        o2_subsample_n=50,
+        seed=42,
+        figsize=(10, 5),
+    )
+
+    _plot_regime_box_jitter_v2(
+        dv2,
+        y_col="maintenance_severity",
+        out_png=figures_out / "Fig02C_regime_vs_severity.png",
+        out_summary_csv=figures_out / "Fig02C_regime_vs_severity_summary.csv",
+        title="Maintenance severity vs predicted limiting regime",
+        ylabel="Maintenance severity (objective / run max)",
+        xlabel="Primary limiting regime (FBA saturation label)",
+        regimes=regimes3,
+        caption_not_observed=caption,
+        o2_subsample_n=50,
+        seed=42,
+        figsize=(10, 5),
     )
 
     # Fig02: re-draw without run_id legend (primary_regime colors only)
