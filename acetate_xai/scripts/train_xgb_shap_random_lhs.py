@@ -220,6 +220,152 @@ def _shap_global_importance_and_dep_values(shap_values) -> tuple[np.ndarray, np.
     raise TypeError(f"Unsupported shap_values shape: {getattr(arr, 'shape', None)}")
 
 
+def _shap_to_n_f_k(shap_values, *, n_features: int) -> np.ndarray:
+    """
+    Coerce multiclass SHAP outputs into a unified ndarray (N, F, K).
+
+    Accepts common shapes:
+      - list[K] of (N, F)
+      - ndarray (N, F) -> treated as (N, F, 1)
+      - ndarray (K, N, F)
+      - ndarray (N, F, K)
+    """
+    if isinstance(shap_values, list) and shap_values:
+        arr = np.stack([np.asarray(v) for v in shap_values], axis=0)  # (K,N,F)
+        if arr.ndim != 3:
+            raise TypeError(f"Unexpected list->stack shap_values ndim: {arr.ndim}")
+        if arr.shape[2] != n_features:
+            raise ValueError(f"shap_values feature dim mismatch: got {arr.shape[2]}, expected {n_features}")
+        return np.transpose(arr, (1, 2, 0))  # (N,F,K)
+
+    arr = np.asarray(shap_values)
+    if arr.ndim == 2:
+        if arr.shape[1] != n_features:
+            raise ValueError(f"shap_values feature dim mismatch: got {arr.shape[1]}, expected {n_features}")
+        return arr[:, :, None]
+
+    if arr.ndim == 3:
+        # (K,N,F)
+        if arr.shape[2] == n_features and arr.shape[0] < 50:
+            return np.transpose(arr, (1, 2, 0))
+        # (N,F,K)
+        if arr.shape[1] == n_features:
+            return arr
+        raise ValueError(f"Unsupported 3D shap_values shape (n_features={n_features}): {arr.shape}")
+
+    raise TypeError(f"Unsupported shap_values shape: {getattr(arr, 'shape', None)}")
+
+
+def _write_shap_richness_reports(
+    *,
+    outdir: Path,
+    task: str,
+    seed: int,
+    topk: int,
+    feature_names: list[str],
+    shap_n_f_k: np.ndarray,
+    class_names: list[str] | None = None,
+    class_distribution: dict[str, int] | None = None,
+) -> None:
+    """
+    Write:
+      - shap_richness_report.json
+      - shap_richness_report.csv
+    and optionally:
+      - shap_by_class_importance.csv (regime only)
+
+    Also returns domination_index and writes warning into run_metadata.json if >=0.7.
+    """
+    outdir.mkdir(parents=True, exist_ok=True)
+    n_used = int(shap_n_f_k.shape[0])
+    n_features = int(shap_n_f_k.shape[1])
+    k = int(shap_n_f_k.shape[2])
+    n_topk = int(min(max(1, int(topk)), n_features))
+
+    # global importance: mean(|shap|) over samples+classes -> (F,)
+    mean_abs = np.mean(np.abs(shap_n_f_k), axis=(0, 2))
+    order = np.argsort(mean_abs)[::-1]
+    top_idx = order[:n_topk]
+    top_vals = mean_abs[top_idx]
+    sum_top = float(np.sum(top_vals)) if float(np.sum(top_vals)) > 0 else float("nan")
+
+    domination_index = float("nan")
+    if np.isfinite(sum_top) and sum_top > 0 and len(top_vals) > 0:
+        domination_index = float(top_vals[0] / sum_top)
+
+    # nonzero ratio per feature among topk (flatten N and K)
+    nz = np.abs(shap_n_f_k[:, top_idx, :]) > 1e-8
+    nonzero_ratio = np.mean(nz, axis=(0, 2))  # (topk,)
+
+    # summary stats for topk mean_abs_shap
+    top_stats = {
+        "mean": float(np.mean(top_vals)) if len(top_vals) else float("nan"),
+        "std": float(np.std(top_vals, ddof=1)) if len(top_vals) >= 2 else float("nan"),
+        "min": float(np.min(top_vals)) if len(top_vals) else float("nan"),
+        "max": float(np.max(top_vals)) if len(top_vals) else float("nan"),
+    }
+
+    report: dict[str, Any] = {
+        "n_used": n_used,
+        "n_features": n_features,
+        "n_topk": n_topk,
+        "seed": int(seed),
+        "task": str(task),
+        "topk_mean_abs_shap_stats": top_stats,
+        "domination_index": domination_index,
+    }
+    if task == "regime" and class_distribution is not None:
+        report["class_distribution"] = class_distribution
+
+    # write CSV per-feature for topk
+    rows = []
+    for i, f_idx in enumerate(top_idx):
+        f = str(feature_names[int(f_idx)])
+        rows.append(
+            {
+                "feature": f,
+                "mean_abs_shap": float(mean_abs[int(f_idx)]),
+                "nonzero_ratio": float(nonzero_ratio[i]),
+                "domination_contrib": float(mean_abs[int(f_idx)] / sum_top) if np.isfinite(sum_top) and sum_top > 0 else float("nan"),
+            }
+        )
+    pd.DataFrame(rows).to_csv(outdir / "shap_richness_report.csv", index=False)
+
+    # Nonzero ratios full vector for JSON (topk only, compact)
+    report["nonzero_shap_ratio_topk"] = {str(feature_names[int(i)]): float(r) for i, r in zip(top_idx, nonzero_ratio)}
+
+    (outdir / "shap_richness_report.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
+
+    # Per-class importance (regime)
+    if task == "regime" and class_names is not None and k == len(class_names):
+        recs = []
+        # mean(|shap|) over samples per class -> (F,) for each class
+        for ci, cname in enumerate(class_names):
+            imp_c = np.mean(np.abs(shap_n_f_k[:, :, ci]), axis=0)
+            ord_c = np.argsort(imp_c)[::-1]
+            for rank, j in enumerate(ord_c[:10], start=1):
+                recs.append(
+                    {
+                        "class_name": str(cname),
+                        "feature": str(feature_names[int(j)]),
+                        "mean_abs_shap_class": float(imp_c[int(j)]),
+                        "rank_in_class": int(rank),
+                    }
+                )
+        pd.DataFrame(recs).to_csv(outdir / "shap_by_class_importance.csv", index=False)
+
+    # warning propagation into run_metadata.json
+    if np.isfinite(domination_index) and domination_index >= 0.7:
+        meta_path = outdir / "run_metadata.json"
+        if meta_path.exists():
+            try:
+                meta = json.loads(meta_path.read_text(encoding="utf-8"))
+            except Exception:  # noqa: BLE001
+                meta = {}
+            meta["warning"] = f"SHAP domination_index >= 0.7 (domination_index={domination_index:.3g})"
+            meta_path.write_text(json.dumps(meta, indent=2), encoding="utf-8")
+
+
 def _write_json(path: Path, payload: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
@@ -318,6 +464,7 @@ def main(argv: list[str] | None = None) -> int:
         explainer = shap.TreeExplainer(model)
         shap_values = explainer.shap_values(X_test)
         global_importance, dep_vals = _shap_global_importance_and_dep_values(shap_values)
+        shap_n_f_k = _shap_to_n_f_k(shap_values, n_features=len(X_test.columns))
 
         shap_imp = (
             pd.DataFrame({"feature": list(X_test.columns), "mean_abs_shap": global_importance})
@@ -356,6 +503,33 @@ def main(argv: list[str] | None = None) -> int:
                     plt.tight_layout()
                     plt.savefig(outdir / f"shap_dependence_{safe}.png", dpi=200, bbox_inches="tight")
                     plt.close()
+
+        # Per-class beeswarm (subset by true class label) + richness reports
+        class_dist = pd.Series(y_raw).value_counts().to_dict()
+        _write_shap_richness_reports(
+            outdir=outdir,
+            task="regime",
+            seed=int(args.seed),
+            topk=int(args.topk),
+            feature_names=list(X_test.columns),
+            shap_n_f_k=shap_n_f_k,
+            class_names=classes,
+            class_distribution={str(k): int(v) for k, v in class_dist.items()},
+        )
+
+        # class-specific beeswarm: use SHAP for that class output, but subset rows where true label == class
+        for ci, cname in enumerate(classes):
+            mask = (le.inverse_transform(y_test) == cname)
+            if not np.any(mask):
+                continue
+            sv_c = shap_n_f_k[mask, :, ci]
+            X_c = X_test.loc[mask].copy()
+            plt.figure(figsize=(10, 6))
+            shap.summary_plot(sv_c, X_c, show=False, max_display=int(args.topk))
+            plt.tight_layout()
+            safe_c = _safe_filename(cname, max_len=80)
+            plt.savefig(outdir / f"shap_beeswarm_class_{safe_c}.png", dpi=200, bbox_inches="tight")
+            plt.close()
 
         _write_json(
             outdir / "run_metadata.json",
@@ -421,6 +595,7 @@ def main(argv: list[str] | None = None) -> int:
     explainer = shap.TreeExplainer(model)
     shap_values = explainer.shap_values(X_test)
     global_importance, dep_vals = _shap_global_importance_and_dep_values(shap_values)
+    shap_n_f_k = _shap_to_n_f_k(shap_values, n_features=len(X_test.columns))
 
     shap_imp = (
         pd.DataFrame({"feature": list(X_test.columns), "mean_abs_shap": global_importance})
@@ -454,6 +629,15 @@ def main(argv: list[str] | None = None) -> int:
                 plt.tight_layout()
                 plt.savefig(outdir / f"shap_dependence_{safe}.png", dpi=200, bbox_inches="tight")
                 plt.close()
+
+    _write_shap_richness_reports(
+        outdir=outdir,
+        task="severity",
+        seed=int(args.seed),
+        topk=int(args.topk),
+        feature_names=list(X_test.columns),
+        shap_n_f_k=shap_n_f_k,
+    )
 
     _write_json(
         outdir / "run_metadata.json",
