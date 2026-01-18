@@ -41,6 +41,18 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="For --task severity, additionally drop objective_value from X (convenience flag for bias check).",
     )
+    p.add_argument(
+        "--shap-max-samples",
+        type=int,
+        default=300,
+        help="Max samples to use for SHAP computations/plots (default: 300).",
+    )
+    p.add_argument(
+        "--shap-sampling",
+        choices=["balanced", "stratified", "random"],
+        default="stratified",
+        help="How to subsample rows for SHAP only (default: stratified).",
+    )
     return p
 
 
@@ -288,6 +300,9 @@ def _write_shap_richness_reports(
     shap_n_f_k: np.ndarray,
     class_names: list[str] | None = None,
     class_distribution: dict[str, int] | None = None,
+    shap_n_used_requested: int | None = None,
+    shap_n_used_actual: int | None = None,
+    shap_sampling_mode: str | None = None,
 ) -> float:
     """
     Write:
@@ -333,6 +348,9 @@ def _write_shap_richness_reports(
         "n_topk": n_topk,
         "seed": int(seed),
         "task": str(task),
+        "shap_n_used_requested": int(shap_n_used_requested) if shap_n_used_requested is not None else None,
+        "shap_n_used_actual": int(shap_n_used_actual) if shap_n_used_actual is not None else None,
+        "shap_sampling_mode": str(shap_sampling_mode) if shap_sampling_mode is not None else None,
         "topk_mean_abs_shap_stats": top_stats,
         "domination_index": domination_index,
     }
@@ -400,6 +418,116 @@ def _write_json(path: Path, payload: dict[str, Any]) -> None:
             merged = {}
     merged.update(payload)
     path.write_text(json.dumps(merged, indent=2), encoding="utf-8")
+
+
+def _pick_shap_indices_regime(
+    *,
+    y_raw: np.ndarray,
+    max_samples: int,
+    mode: str,
+    seed: int,
+) -> np.ndarray:
+    """
+    Select SHAP subset indices for regime (categorical) labels.
+      - balanced: equal per class (if possible)
+      - stratified: preserve class proportions
+      - random: random subset
+    """
+    rng = np.random.default_rng(int(seed))
+    n = int(len(y_raw))
+    m = int(min(max(1, int(max_samples)), n))
+    if mode == "random":
+        return rng.choice(n, size=m, replace=False)
+
+    y = pd.Series(y_raw.astype(str))
+    classes = sorted(y.unique().tolist())
+    if mode == "balanced":
+        per = int(max(1, m // max(1, len(classes))))
+        idx_all = []
+        for c in classes:
+            idx_c = np.flatnonzero((y == c).to_numpy())
+            if len(idx_c) == 0:
+                continue
+            take = min(per, len(idx_c))
+            idx_all.append(rng.choice(idx_c, size=take, replace=False))
+        if not idx_all:
+            return rng.choice(n, size=m, replace=False)
+        idx = np.concatenate(idx_all)
+        # If short due to small classes, top up randomly from remaining
+        if len(idx) < m:
+            rem = np.setdiff1d(np.arange(n), idx, assume_unique=False)
+            if len(rem) > 0:
+                add = rng.choice(rem, size=min(m - len(idx), len(rem)), replace=False)
+                idx = np.concatenate([idx, add])
+        return idx
+
+    # stratified
+    try:
+        from sklearn.model_selection import StratifiedShuffleSplit
+
+        sss = StratifiedShuffleSplit(n_splits=1, test_size=m, random_state=int(seed))
+        _train, idx = next(sss.split(np.zeros((n, 1)), y.to_numpy()))
+        return idx
+    except Exception:
+        return rng.choice(n, size=m, replace=False)
+
+
+def _pick_shap_indices_severity(
+    *,
+    y: np.ndarray,
+    max_samples: int,
+    mode: str,
+    seed: int,
+    n_bins: int = 5,
+) -> np.ndarray:
+    """
+    Select SHAP subset indices for severity (continuous).
+      - stratified/balanced: bin y by quantiles and stratify on bins
+      - random: random subset
+    """
+    rng = np.random.default_rng(int(seed))
+    n = int(len(y))
+    m = int(min(max(1, int(max_samples)), n))
+    if mode == "random":
+        return rng.choice(n, size=m, replace=False)
+
+    ys = pd.Series(pd.to_numeric(pd.Series(y), errors="coerce"))
+    # quantile bins
+    try:
+        bins = pd.qcut(ys.rank(method="first"), q=int(n_bins), labels=False, duplicates="drop")
+        bins = bins.astype(int)
+    except Exception:
+        return rng.choice(n, size=m, replace=False)
+
+    if mode == "balanced":
+        classes = sorted(pd.Series(bins).unique().tolist())
+        per = int(max(1, m // max(1, len(classes))))
+        idx_all = []
+        for c in classes:
+            idx_c = np.flatnonzero((bins.to_numpy() == c))
+            if len(idx_c) == 0:
+                continue
+            take = min(per, len(idx_c))
+            idx_all.append(rng.choice(idx_c, size=take, replace=False))
+        if not idx_all:
+            return rng.choice(n, size=m, replace=False)
+        idx = np.concatenate(idx_all)
+        if len(idx) < m:
+            rem = np.setdiff1d(np.arange(n), idx, assume_unique=False)
+            if len(rem) > 0:
+                add = rng.choice(rem, size=min(m - len(idx), len(rem)), replace=False)
+                idx = np.concatenate([idx, add])
+        return idx
+
+    # stratified on bins
+    try:
+        from sklearn.model_selection import StratifiedShuffleSplit
+
+        sss = StratifiedShuffleSplit(n_splits=1, test_size=m, random_state=int(seed))
+        _train, idx = next(sss.split(np.zeros((n, 1)), bins.to_numpy()))
+        return idx
+    except Exception:
+        return rng.choice(n, size=m, replace=False)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -500,14 +628,23 @@ def main(argv: list[str] | None = None) -> int:
 
         model.save_model(str(outdir / "model.json"))
 
-        # SHAP
+        # SHAP (on separate subset; training split remains unchanged)
+        shap_idx = _pick_shap_indices_regime(
+            y_raw=y_raw,
+            max_samples=int(args.shap_max_samples),
+            mode=str(args.shap_sampling),
+            seed=int(args.seed),
+        )
+        X_shap = X.iloc[shap_idx].copy()
+        y_shap_raw = pd.Series(y_raw).iloc[shap_idx].astype(str).to_numpy()
+
         explainer = shap.TreeExplainer(model)
-        shap_values = explainer.shap_values(X_test)
+        shap_values = explainer.shap_values(X_shap)
         global_importance, dep_vals = _shap_global_importance_and_dep_values(shap_values)
-        shap_n_f_k = _shap_to_n_f_k(shap_values, n_features=len(X_test.columns))
+        shap_n_f_k = _shap_to_n_f_k(shap_values, n_features=len(X_shap.columns))
 
         shap_imp = (
-            pd.DataFrame({"feature": list(X_test.columns), "mean_abs_shap": global_importance})
+            pd.DataFrame({"feature": list(X_shap.columns), "mean_abs_shap": global_importance})
             .sort_values("mean_abs_shap", ascending=False)
             .reset_index(drop=True)
         )
@@ -519,13 +656,13 @@ def main(argv: list[str] | None = None) -> int:
         import matplotlib.pyplot as plt  # noqa: E402
 
         plt.figure(figsize=(10, 6))
-        shap.summary_plot(shap_values, X_test, show=False, max_display=int(args.topk))
+        shap.summary_plot(shap_values, X_shap, show=False, max_display=int(args.topk))
         plt.tight_layout()
         plt.savefig(outdir / "shap_beeswarm.png", dpi=200, bbox_inches="tight")
         plt.close()
 
         plt.figure(figsize=(10, 6))
-        shap.summary_plot(shap_values, X_test, show=False, plot_type="bar", max_display=int(args.topk))
+        shap.summary_plot(shap_values, X_shap, show=False, plot_type="bar", max_display=int(args.topk))
         plt.tight_layout()
         plt.savefig(outdir / "shap_bar.png", dpi=200, bbox_inches="tight")
         plt.close()
@@ -539,7 +676,7 @@ def main(argv: list[str] | None = None) -> int:
                 for feat in top3_features:
                     safe = _safe_filename(feat)
                     plt.figure(figsize=(7, 4.5))
-                    shap.dependence_plot(feat, dep_vals, X_test, show=False)
+                    shap.dependence_plot(feat, dep_vals, X_shap, show=False)
                     plt.tight_layout()
                     plt.savefig(outdir / f"shap_dependence_{safe}.png", dpi=200, bbox_inches="tight")
                     plt.close()
@@ -551,19 +688,28 @@ def main(argv: list[str] | None = None) -> int:
             task="regime",
             seed=int(args.seed),
             topk=int(args.topk),
-            feature_names=list(X_test.columns),
+            feature_names=list(X_shap.columns),
             shap_n_f_k=shap_n_f_k,
             class_names=classes,
             class_distribution={str(k): int(v) for k, v in class_dist.items()},
+            shap_n_used_requested=int(args.shap_max_samples),
+            shap_n_used_actual=int(len(X_shap)),
+            shap_sampling_mode=str(args.shap_sampling),
         )
 
         # class-specific beeswarm: use SHAP for that class output, but subset rows where true label == class
+        max_per_class = 200
         for ci, cname in enumerate(classes):
-            mask = (le.inverse_transform(y_test) == cname)
+            mask = (y_shap_raw == cname)
             if not np.any(mask):
                 continue
-            sv_c = shap_n_f_k[mask, :, ci]
-            X_c = X_test.loc[mask].copy()
+            # cap per class for stability
+            idx_c = np.flatnonzero(mask)
+            if len(idx_c) > max_per_class:
+                rng = np.random.default_rng(int(args.seed) + 13 + ci)
+                idx_c = rng.choice(idx_c, size=max_per_class, replace=False)
+            sv_c = shap_n_f_k[idx_c, :, ci]
+            X_c = X_shap.iloc[idx_c].copy()
             plt.figure(figsize=(10, 6))
             shap.summary_plot(sv_c, X_c, show=False, max_display=int(args.topk))
             plt.tight_layout()
@@ -587,6 +733,9 @@ def main(argv: list[str] | None = None) -> int:
                 "skip_dependence": bool(args.skip_dependence),
                 "drop_features": sorted(drop_features),
                 "domination_index": domination_index,
+                "shap_n_used_requested": int(args.shap_max_samples),
+                "shap_n_used_actual": int(len(X_shap)),
+                "shap_sampling_mode": str(args.shap_sampling),
             },
         )
         print(f"[OK] Wrote outputs under: {outdir}")
@@ -634,26 +783,36 @@ def main(argv: list[str] | None = None) -> int:
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt  # noqa: E402
 
+    # SHAP subset for severity (train/test unchanged)
+    shap_idx = _pick_shap_indices_severity(
+        y=y,
+        max_samples=int(args.shap_max_samples),
+        mode=str(args.shap_sampling),
+        seed=int(args.seed),
+        n_bins=5,
+    )
+    X_shap = X.iloc[shap_idx].copy()
+
     explainer = shap.TreeExplainer(model)
-    shap_values = explainer.shap_values(X_test)
+    shap_values = explainer.shap_values(X_shap)
     global_importance, dep_vals = _shap_global_importance_and_dep_values(shap_values)
-    shap_n_f_k = _shap_to_n_f_k(shap_values, n_features=len(X_test.columns))
+    shap_n_f_k = _shap_to_n_f_k(shap_values, n_features=len(X_shap.columns))
 
     shap_imp = (
-        pd.DataFrame({"feature": list(X_test.columns), "mean_abs_shap": global_importance})
+        pd.DataFrame({"feature": list(X_shap.columns), "mean_abs_shap": global_importance})
         .sort_values("mean_abs_shap", ascending=False)
         .reset_index(drop=True)
     )
     shap_imp.to_csv(outdir / "shap_importance.csv", index=False)
 
     plt.figure(figsize=(10, 6))
-    shap.summary_plot(shap_values, X_test, show=False, max_display=int(args.topk))
+    shap.summary_plot(shap_values, X_shap, show=False, max_display=int(args.topk))
     plt.tight_layout()
     plt.savefig(outdir / "shap_beeswarm.png", dpi=200, bbox_inches="tight")
     plt.close()
 
     plt.figure(figsize=(10, 6))
-    shap.summary_plot(shap_values, X_test, show=False, plot_type="bar", max_display=int(args.topk))
+    shap.summary_plot(shap_values, X_shap, show=False, plot_type="bar", max_display=int(args.topk))
     plt.tight_layout()
     plt.savefig(outdir / "shap_bar.png", dpi=200, bbox_inches="tight")
     plt.close()
@@ -667,7 +826,7 @@ def main(argv: list[str] | None = None) -> int:
             for feat in top3_features:
                 safe = _safe_filename(feat)
                 plt.figure(figsize=(7, 4.5))
-                shap.dependence_plot(feat, dep_vals, X_test, show=False)
+                shap.dependence_plot(feat, dep_vals, X_shap, show=False)
                 plt.tight_layout()
                 plt.savefig(outdir / f"shap_dependence_{safe}.png", dpi=200, bbox_inches="tight")
                 plt.close()
@@ -677,8 +836,11 @@ def main(argv: list[str] | None = None) -> int:
         task="severity",
         seed=int(args.seed),
         topk=int(args.topk),
-        feature_names=list(X_test.columns),
+        feature_names=list(X_shap.columns),
         shap_n_f_k=shap_n_f_k,
+        shap_n_used_requested=int(args.shap_max_samples),
+        shap_n_used_actual=int(len(X_shap)),
+        shap_sampling_mode=str(args.shap_sampling),
     )
 
     if np.isfinite(domination_index) and domination_index >= 0.7:
@@ -704,6 +866,9 @@ def main(argv: list[str] | None = None) -> int:
             "drop_features": sorted(drop_features),
             "severity_drop_objective": bool(args.severity_drop_objective),
             "domination_index": domination_index,
+            "shap_n_used_requested": int(args.shap_max_samples),
+            "shap_n_used_actual": int(len(X_shap)),
+            "shap_sampling_mode": str(args.shap_sampling),
         },
     )
     print(f"[OK] Wrote outputs under: {outdir}")

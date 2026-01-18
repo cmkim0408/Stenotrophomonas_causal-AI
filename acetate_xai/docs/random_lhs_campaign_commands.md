@@ -67,3 +67,17 @@ PYTHONPATH=$PWD/acetate_xai/src python acetate_xai/scripts/run_random_lhs_campai
   --fva-boundary-k 12
 ```
 
+## XGBoost + SHAP on Random LHS results (increase SHAP sample size)
+
+Example (regime classification) with larger SHAP subset:
+
+```bash
+PYTHONPATH=$PWD/acetate_xai/src python acetate_xai/scripts/train_xgb_shap_random_lhs.py \
+  --task regime \
+  --labels results/campaigns/C_random_LHS/regime_labels.parquet \
+  --features results/campaigns/C_random_LHS/features.parquet \
+  --outdir results/campaigns/C_random_LHS/xai_xgb \
+  --shap-max-samples 300 \
+  --shap-sampling stratified
+```
+
