@@ -404,6 +404,38 @@ def _plot_anchor_scatter(
     return rho
 
 
+def _load_anchor_scatter_data(features_parquet: Path) -> pd.DataFrame:
+    """
+    Load the exact data used for the objective_value vs measured_OD scatter.
+    Ensures objective_value exists by merging sibling regime_fba.parquet when needed.
+    """
+    df = pd.read_parquet(features_parquet)
+    need = {"condition_id", "measured_OD", "set_name"}
+    missing = sorted(need - set(df.columns))
+    if missing:
+        raise ValueError(f"features.parquet missing required columns: {missing}")
+
+    d = df[list(need)].copy()
+    if "objective_value" in df.columns:
+        d["objective_value"] = pd.to_numeric(df["objective_value"], errors="coerce")
+    else:
+        regime_fba = features_parquet.parent / "regime_fba.parquet"
+        if not regime_fba.exists():
+            raise ValueError(
+                "features.parquet does not contain objective_value, and sibling regime_fba.parquet not found at: "
+                f"{regime_fba}"
+            )
+        rf = pd.read_parquet(regime_fba, columns=["condition_id", "objective_value"])
+        rf["objective_value"] = pd.to_numeric(rf["objective_value"], errors="coerce")
+        d = d.merge(rf, on="condition_id", how="left")
+
+    d["measured_OD"] = pd.to_numeric(d["measured_OD"], errors="coerce")
+    d["set_name"] = d["set_name"].astype(str)
+    d["condition_id"] = d["condition_id"].astype(str)
+    d = d.dropna(subset=["objective_value", "measured_OD"]).copy()
+    return d[["condition_id", "objective_value", "measured_OD", "set_name"]]
+
+
 def _load_feature_matrix_regime_dataset(regime_dataset_parquet: Path, *, seed: int = 42, max_rows: int = 2000) -> pd.DataFrame:
     """
     Load X feature matrix from regime_dataset.parquet:
@@ -602,6 +634,19 @@ def main(argv: list[str] | None = None) -> int:
     # Fig02E before/after (objective vs OD; Spearman rho) for ATPM calibration evaluation
     before_features = _resolve_anchor_features_parquet(results_root, args.before_features)
     after_features = _resolve_calibrated_features_parquet(results_root, args.after_features)
+    before_df = _load_anchor_scatter_data(before_features)
+    after_df = _load_anchor_scatter_data(after_features)
+    before_df.to_csv(figures_out / "Fig02E_before_objective_vs_OD_data.csv", index=False)
+    after_df.to_csv(figures_out / "Fig02E_after_calibObjective_vs_OD_data.csv", index=False)
+
+    # Also save a joined table (condition_id-aligned) for easy downstream analysis.
+    joined = before_df.merge(
+        after_df[["condition_id", "objective_value"]].rename(columns={"objective_value": "objective_value_after"}),
+        on="condition_id",
+        how="inner",
+    ).rename(columns={"objective_value": "objective_value_before"})
+    joined.to_csv(figures_out / "Fig02E_before_after_join.csv", index=False)
+
     rho_before = _plot_anchor_scatter(
         features_parquet=before_features,
         out_png=figures_out / "Fig02E_before_objective_vs_OD.png",
