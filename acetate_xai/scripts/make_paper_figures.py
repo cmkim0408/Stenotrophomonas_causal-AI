@@ -645,6 +645,184 @@ def _load_feature_matrix_regime_dataset(regime_dataset_parquet: Path, *, seed: i
     return X
 
 
+def _plot_regime_vs_od_and_severity(
+    *,
+    regime_dataset_parquet: Path,
+    out_od_png: Path,
+    out_od_csv: Path,
+    out_severity_png: Path | None = None,
+) -> None:
+    """
+    Fig02B/Fig02C:
+      - Fig02B: boxplot + jitter for measured_OD by primary_regime
+      - Fig02C (optional): boxplot + jitter for maintenance_severity by primary_regime
+
+    Input: regime_dataset.parquet (preferred)
+      expected cols: primary_regime, measured_OD, maintenance_severity (optional), run_id (optional), condition_id (optional)
+    """
+    import matplotlib
+
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    rng = np.random.default_rng(42)
+
+    df = pd.read_parquet(regime_dataset_parquet)
+
+    # Column normalization: the dataset may have measured_OD_x / measured_OD_y after merges.
+    def _pick_col(candidates: list[str]) -> str | None:
+        for c in candidates:
+            if c in df.columns:
+                return c
+        return None
+
+    regime_col = _pick_col(["primary_regime", "label"])
+    od_col = _pick_col(["measured_OD", "measured_OD_y", "measured_OD_x"])
+    sev_col = _pick_col(["maintenance_severity"])
+    run_col = _pick_col(["run_id"])
+    cond_col = _pick_col(["condition_id"])
+
+    if regime_col is None:
+        raise ValueError("regime_dataset.parquet must include one of: primary_regime, label")
+    if od_col is None:
+        raise ValueError("regime_dataset.parquet must include one of: measured_OD, measured_OD_y, measured_OD_x")
+
+    d = df.copy()
+    d["primary_regime"] = d[regime_col].astype(str).str.strip()
+    d["measured_OD"] = pd.to_numeric(d[od_col], errors="coerce")
+
+    # Compute maintenance_severity if missing but objective_value + run_id exist.
+    if sev_col is not None:
+        d["maintenance_severity"] = pd.to_numeric(d[sev_col], errors="coerce")
+    else:
+        if "objective_value" in d.columns and run_col is not None:
+            obj = pd.to_numeric(d["objective_value"], errors="coerce")
+            d["_obj"] = obj
+            max_by_run = d.groupby(run_col, dropna=False)["_obj"].transform("max")
+            d["maintenance_severity"] = d["_obj"] / max_by_run
+            d.loc[~np.isfinite(d["maintenance_severity"]), "maintenance_severity"] = np.nan
+            d.drop(columns=["_obj"], inplace=True)
+        else:
+            d["maintenance_severity"] = np.nan
+
+    # Keep only rows with OD for Fig02B
+    d_od = d.dropna(subset=["primary_regime", "measured_OD"]).copy()
+
+    # Category order (keep empty categories)
+    regimes_order = ["Ac_limited", "N_limited", "Pi_limited", "O2_limited", "Unconstrained"]
+    # Keep additional regimes if present
+    extra = [r for r in sorted(d_od["primary_regime"].unique().tolist()) if r not in regimes_order]
+    regimes = regimes_order + extra
+
+    # Save data used for plotting
+    cols = ["primary_regime", "measured_OD", "maintenance_severity"]
+    if run_col is not None:
+        d_od["run_id"] = d_od[run_col].astype(str)
+        cols.append("run_id")
+    if cond_col is not None:
+        d_od["condition_id"] = d_od[cond_col].astype(str)
+        cols.append("condition_id")
+    out_od_png.parent.mkdir(parents=True, exist_ok=True)
+    out_od_csv.parent.mkdir(parents=True, exist_ok=True)
+    d_od[cols].to_csv(out_od_csv, index=False)
+
+    # Simple color map (no legend spam)
+    palette = {
+        "Ac_limited": "#d62728",
+        "O2_limited": "#1f77b4",
+        "N_limited": "#2ca02c",
+        "Pi_limited": "#9467bd",
+        "Unconstrained": "#7f7f7f",
+    }
+
+    def _draw_box_jitter(ax, y_col: str, title: str, ylabel: str) -> None:
+        ax.set_title(title, fontsize=12)
+        ax.set_ylabel(ylabel)
+        ax.grid(True, axis="y", alpha=0.25)
+        positions = np.arange(1, len(regimes) + 1)
+
+        data = []
+        ns = []
+        for r in regimes:
+            vals = d_od.loc[d_od["primary_regime"] == r, y_col].dropna().to_numpy()
+            data.append(vals)
+            ns.append(int(len(vals)))
+
+        # Matplotlib boxplot tolerates empty arrays; showfliers=False to reduce clutter
+        bp = ax.boxplot(
+            data,
+            positions=positions,
+            widths=0.6,
+            patch_artist=True,
+            showfliers=False,
+            medianprops=dict(color="black", linewidth=1.2),
+        )
+        for patch, r in zip(bp["boxes"], regimes):
+            patch.set_facecolor(palette.get(r, "#bbbbbb"))
+            patch.set_alpha(0.35)
+            patch.set_edgecolor("#444444")
+
+        # Jittered points
+        for i, (r, vals) in enumerate(zip(regimes, data), start=1):
+            if len(vals) == 0:
+                continue
+            xj = i + rng.normal(0, 0.06, size=len(vals))
+            ax.scatter(
+                xj,
+                vals,
+                s=18,
+                alpha=0.7,
+                color=palette.get(r, "#555555"),
+                edgecolors="none",
+            )
+
+        ax.set_xticks(positions)
+        ax.set_xticklabels(regimes, rotation=0)
+
+        # n annotations
+        finite = d_od[y_col].dropna()
+        if len(finite) > 0:
+            y_max = float(finite.max())
+            y_min = float(finite.min())
+            y_span = max(1e-9, y_max - y_min)
+            y_text = y_max + 0.06 * y_span
+            for x, n in zip(positions, ns):
+                ax.text(x, y_text, f"n={n}", ha="center", va="bottom", fontsize=9, color="#333333")
+            ax.set_ylim(y_min - 0.05 * y_span, y_max + 0.14 * y_span)
+
+    # Fig02B: OD vs regime
+    fig, ax = plt.subplots(figsize=(10, 4.8))
+    _draw_box_jitter(
+        ax,
+        y_col="measured_OD",
+        title="Experimental OD vs predicted limiting regime",
+        ylabel="Measured OD600 at 32 h",
+    )
+    fig.tight_layout()
+    fig.savefig(out_od_png, dpi=220, bbox_inches="tight")
+    plt.close(fig)
+
+    # Fig02C: severity vs regime (optional)
+    if out_severity_png is not None and "maintenance_severity" in d.columns:
+        d_sev = d.dropna(subset=["primary_regime", "maintenance_severity"]).copy()
+        if len(d_sev) > 0:
+            # Use same regime list but severity data subset
+            d_od_backup = d_od
+            d_od = d_sev  # reuse helper
+            fig2, ax2 = plt.subplots(figsize=(10, 4.2))
+            _draw_box_jitter(
+                ax2,
+                y_col="maintenance_severity",
+                title="Maintenance severity vs predicted limiting regime",
+                ylabel="Maintenance severity (objective / run max)",
+            )
+            fig2.tight_layout()
+            out_severity_png.parent.mkdir(parents=True, exist_ok=True)
+            fig2.savefig(out_severity_png, dpi=220, bbox_inches="tight")
+            plt.close(fig2)
+            d_od = d_od_backup
+
+
 def _plot_shap_beeswarm_from_saved_model(
     *,
     model_json: Path,
@@ -817,6 +995,14 @@ def main(argv: list[str] | None = None) -> int:
         out_png=figures_out / "Fig02A_experiment_anchors_4panel.png",
         out_csv=figures_out / "Fig02A_experiment_anchors_4panel.csv",
         figsize=(10, 7),
+    )
+
+    # Fig02B (and optional Fig02C): regime vs OD (and severity) from regime_dataset.parquet
+    _plot_regime_vs_od_and_severity(
+        regime_dataset_parquet=src_regime_dataset,
+        out_od_png=figures_out / "Fig02B_regime_vs_OD.png",
+        out_od_csv=figures_out / "Fig02B_regime_vs_OD.csv",
+        out_severity_png=figures_out / "Fig02C_regime_vs_severity.png",
     )
 
     # Fig02: re-draw without run_id legend (primary_regime colors only)
