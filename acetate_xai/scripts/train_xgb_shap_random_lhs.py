@@ -28,6 +28,19 @@ def build_parser() -> argparse.ArgumentParser:
         help="Class imbalance handling (default: balanced).",
     )
     p.add_argument("--skip-dependence", action="store_true", help="Skip dependence plots")
+    p.add_argument(
+        "--drop-features",
+        default="",
+        help=(
+            "Comma-separated feature names to drop from X (e.g., 'objective_value,pi_sat'). "
+            "Applied after feature construction; missing names are ignored."
+        ),
+    )
+    p.add_argument(
+        "--severity-drop-objective",
+        action="store_true",
+        help="For --task severity, additionally drop objective_value from X (convenience flag for bias check).",
+    )
     return p
 
 
@@ -78,7 +91,7 @@ def _merge_labels_features(labels: pd.DataFrame, features: pd.DataFrame, *, feat
     return merged
 
 
-def _prepare_X_y_regime(df: pd.DataFrame) -> tuple[pd.DataFrame, np.ndarray, list[str]]:
+def _prepare_X_y_regime(df: pd.DataFrame, *, drop_features: set[str]) -> tuple[pd.DataFrame, np.ndarray, list[str]]:
     # 1) status optimal only
     if "status" in df.columns:
         df = df.loc[df["status"].astype(str) == "optimal"].copy()
@@ -129,10 +142,15 @@ def _prepare_X_y_regime(df: pd.DataFrame) -> tuple[pd.DataFrame, np.ndarray, lis
 
     # 4) numeric-only
     X = X.apply(pd.to_numeric, errors="coerce").fillna(0.0)
+
+    # Drop requested features
+    drop = [c for c in X.columns if c in drop_features]
+    if drop:
+        X = X.drop(columns=drop)
     return X, y_raw, df["sample_id"].astype(str).tolist()
 
 
-def _prepare_X_y_severity(df: pd.DataFrame) -> tuple[pd.DataFrame, np.ndarray, list[str]]:
+def _prepare_X_y_severity(df: pd.DataFrame, *, drop_features: set[str]) -> tuple[pd.DataFrame, np.ndarray, list[str]]:
     # 1) status optimal only
     if "status" in df.columns:
         df = df.loc[df["status"].astype(str) == "optimal"].copy()
@@ -183,6 +201,10 @@ def _prepare_X_y_severity(df: pd.DataFrame) -> tuple[pd.DataFrame, np.ndarray, l
     X["has_fva"] = has_fva
 
     X = X.apply(pd.to_numeric, errors="coerce").fillna(0.0)
+
+    drop = [c for c in X.columns if c in drop_features]
+    if drop:
+        X = X.drop(columns=drop)
     return X, yv, df["sample_id"].astype(str).tolist()
 
 
@@ -266,7 +288,7 @@ def _write_shap_richness_reports(
     shap_n_f_k: np.ndarray,
     class_names: list[str] | None = None,
     class_distribution: dict[str, int] | None = None,
-) -> None:
+) -> float:
     """
     Write:
       - shap_richness_report.json
@@ -364,11 +386,20 @@ def _write_shap_richness_reports(
                 meta = {}
             meta["warning"] = f"SHAP domination_index >= 0.7 (domination_index={domination_index:.3g})"
             meta_path.write_text(json.dumps(meta, indent=2), encoding="utf-8")
+    return domination_index
 
 
 def _write_json(path: Path, payload: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    # Merge with existing JSON if present (so warnings from other steps are not overwritten).
+    merged: dict[str, Any] = {}
+    if path.exists():
+        try:
+            merged = json.loads(path.read_text(encoding="utf-8"))
+        except Exception:  # noqa: BLE001
+            merged = {}
+    merged.update(payload)
+    path.write_text(json.dumps(merged, indent=2), encoding="utf-8")
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -396,13 +427,22 @@ def main(argv: list[str] | None = None) -> int:
     features = _read_parquet(features_path)
     df = _merge_labels_features(labels, features, features_path=features_path)
 
+    # Parse drop-features
+    drop_features: set[str] = set()
+    if str(args.drop_features).strip():
+        for tok in re.split(r"[,\s]+", str(args.drop_features).strip()):
+            if tok:
+                drop_features.add(tok.strip())
+    if args.task == "severity" and bool(args.severity_drop_objective):
+        drop_features.add("objective_value")
+
     # Train task
     if args.task == "regime":
         from sklearn.metrics import classification_report
         from sklearn.model_selection import train_test_split
         from sklearn.preprocessing import LabelEncoder
 
-        X, y_raw, sample_ids = _prepare_X_y_regime(df)
+        X, y_raw, sample_ids = _prepare_X_y_regime(df, drop_features=drop_features)
         le = LabelEncoder()
         y = le.fit_transform(y_raw)
         classes = le.classes_.tolist()
@@ -506,7 +546,7 @@ def main(argv: list[str] | None = None) -> int:
 
         # Per-class beeswarm (subset by true class label) + richness reports
         class_dist = pd.Series(y_raw).value_counts().to_dict()
-        _write_shap_richness_reports(
+        domination_index = _write_shap_richness_reports(
             outdir=outdir,
             task="regime",
             seed=int(args.seed),
@@ -545,6 +585,8 @@ def main(argv: list[str] | None = None) -> int:
                 "n_jobs": int(args.n_jobs),
                 "class_weight": str(args.class_weight),
                 "skip_dependence": bool(args.skip_dependence),
+                "drop_features": sorted(drop_features),
+                "domination_index": domination_index,
             },
         )
         print(f"[OK] Wrote outputs under: {outdir}")
@@ -554,7 +596,7 @@ def main(argv: list[str] | None = None) -> int:
     from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
     from sklearn.model_selection import train_test_split
 
-    X, y, _sample_ids = _prepare_X_y_severity(df)
+    X, y, _sample_ids = _prepare_X_y_severity(df, drop_features=drop_features)
     X_train, X_test, y_train, y_test = train_test_split(
         X,
         y,
@@ -630,7 +672,7 @@ def main(argv: list[str] | None = None) -> int:
                 plt.savefig(outdir / f"shap_dependence_{safe}.png", dpi=200, bbox_inches="tight")
                 plt.close()
 
-    _write_shap_richness_reports(
+    domination_index = _write_shap_richness_reports(
         outdir=outdir,
         task="severity",
         seed=int(args.seed),
@@ -638,6 +680,14 @@ def main(argv: list[str] | None = None) -> int:
         feature_names=list(X_test.columns),
         shap_n_f_k=shap_n_f_k,
     )
+
+    if np.isfinite(domination_index) and domination_index >= 0.7:
+        msg = f"[WARN] severity SHAP domination_index>=0.7 (domination_index={domination_index:.3g})"
+        if bool(args.severity_drop_objective):
+            msg += " while --severity-drop-objective is ON (compare with OFF to assess bias)."
+        else:
+            msg += " (try --severity-drop-objective to see if domination decreases)."
+        print(msg)
 
     _write_json(
         outdir / "run_metadata.json",
@@ -651,6 +701,9 @@ def main(argv: list[str] | None = None) -> int:
             "topk": int(args.topk),
             "n_jobs": int(args.n_jobs),
             "skip_dependence": bool(args.skip_dependence),
+            "drop_features": sorted(drop_features),
+            "severity_drop_objective": bool(args.severity_drop_objective),
+            "domination_index": domination_index,
         },
     )
     print(f"[OK] Wrote outputs under: {outdir}")
