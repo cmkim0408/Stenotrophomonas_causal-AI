@@ -326,6 +326,145 @@ def _resolve_calibrated_features_parquet(results_root: Path, override_path: str 
     )
 
 
+def _plot_experiment_anchors_4panel(
+    *,
+    conditions_csv: Path,
+    out_png: Path,
+    out_csv: Path,
+    figsize: tuple[int, int] = (10, 7),
+) -> None:
+    """
+    Experimental anchors 4-panel (2x2) from conditions_experiment.csv.
+
+    Outputs:
+      - out_png: Fig02A_experiment_anchors_4panel.png
+      - out_csv: Fig02A_experiment_anchors_4panel.csv (summarized points: mean/std/n)
+    """
+    import matplotlib
+
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    out_png.parent.mkdir(parents=True, exist_ok=True)
+    out_csv.parent.mkdir(parents=True, exist_ok=True)
+
+    df = pd.read_csv(conditions_csv)
+    if "measured_OD" not in df.columns:
+        raise ValueError("conditions_experiment.csv must include measured_OD")
+
+    # Coerce numerics (robust to strings)
+    for c in ["yeast_extract_gL", "pH0", "nh4cl_gL", "acetate_mM", "measured_OD"]:
+        if c in df.columns:
+            df[c] = pd.to_numeric(df[c], errors="coerce")
+
+    if "set_name" in df.columns:
+        df["set_name"] = df["set_name"].astype(str)
+
+    def _subset(preferred_set: str, required: list[str]) -> pd.DataFrame:
+        dd = df.copy()
+        if "set_name" in dd.columns:
+            cand = dd[dd["set_name"] == preferred_set].copy()
+            if len(cand) > 0:
+                dd = cand
+        return dd.dropna(subset=required).copy()
+
+    def _summarize(dd: pd.DataFrame, *, panel: str, x_col: str, group_col: str | None = None) -> pd.DataFrame:
+        by = [x_col] + ([group_col] if group_col else [])
+        agg = (
+            dd.groupby(by, dropna=True)["measured_OD"]
+            .agg(n="count", mean_OD="mean", std_OD="std")
+            .reset_index()
+            .sort_values(by=by)
+        )
+        agg.insert(0, "panel", panel)
+        return agg
+
+    yeast_dd = _subset("yeast_gradient", ["yeast_extract_gL", "measured_OD"])
+    ph_dd = _subset("ph_toggle", ["pH0", "yeast_extract_gL", "measured_OD"])
+    nh4_dd = _subset("nh4_gradient", ["nh4cl_gL", "measured_OD"])
+    ac_dd = _subset("acetate_gradient", ["acetate_mM", "measured_OD"])
+
+    rows: list[pd.DataFrame] = []
+    rows.append(_summarize(yeast_dd, panel="Yeast gradient", x_col="yeast_extract_gL"))
+
+    if len(ph_dd) > 0:
+        ph_dd2 = ph_dd.copy()
+        # Group yeast into absent/present bins; prefer exact 0.0 / 0.5 when available.
+        ph_dd2["yeast_group_gL"] = np.where(ph_dd2["yeast_extract_gL"] >= 0.25, 0.5, 0.0)
+        rows.append(_summarize(ph_dd2, panel="pH effect (yeast on/off)", x_col="pH0", group_col="yeast_group_gL"))
+
+    rows.append(_summarize(nh4_dd, panel="NH4Cl gradient", x_col="nh4cl_gL"))
+    rows.append(_summarize(ac_dd, panel="Acetate gradient", x_col="acetate_mM"))
+
+    pd.concat(rows, ignore_index=True).to_csv(out_csv, index=False)
+
+    fig, axes = plt.subplots(2, 2, figsize=figsize)
+    fig.suptitle("Experimental anchors (OD600 at 32 h; n≈3)", fontsize=14)
+
+    def _plot_line_marker(ax, dd: pd.DataFrame, *, x: str, title: str, xlabel: str, note: str | None = None) -> None:
+        ax.set_title(title, fontsize=12)
+        ax.set_xlabel(xlabel)
+        ax.set_ylabel("Measured OD600 at 32 h")
+        ax.grid(True, alpha=0.25)
+        if len(dd) == 0:
+            ax.text(0.5, 0.5, "No data", ha="center", va="center", transform=ax.transAxes)
+            if note:
+                ax.text(0.02, 0.02, note, ha="left", va="bottom", transform=ax.transAxes, fontsize=9)
+            return
+        g = dd.groupby(x, dropna=True)["measured_OD"].mean().reset_index().sort_values(x)
+        ax.plot(g[x], g["measured_OD"], marker="o", lw=1.8)
+        if note:
+            ax.text(0.02, 0.02, note, ha="left", va="bottom", transform=ax.transAxes, fontsize=9)
+
+    ax1, ax2, ax3, ax4 = axes[0, 0], axes[0, 1], axes[1, 0], axes[1, 1]
+
+    _plot_line_marker(
+        ax1,
+        yeast_dd,
+        x="yeast_extract_gL",
+        title="Yeast gradient (set: yeast_gradient)",
+        xlabel="Yeast extract (g/L)",
+    )
+
+    # pH effect with/without yeast
+    ax2.set_title("pH effect with/without yeast (set: ph_toggle)", fontsize=12)
+    ax2.set_xlabel("Initial pH (pH0)")
+    ax2.set_ylabel("Measured OD600 at 32 h")
+    ax2.grid(True, alpha=0.25)
+    if len(ph_dd) == 0:
+        ax2.text(0.5, 0.5, "No data", ha="center", va="center", transform=ax2.transAxes)
+    else:
+        ph_dd2 = ph_dd.copy()
+        ph_dd2["yeast_group_gL"] = np.where(ph_dd2["yeast_extract_gL"] >= 0.25, 0.5, 0.0)
+        for yv, label in [(0.5, "Yeast present(0.5 g/L)"), (0.0, "Yeast absent(0 g/L)")]:
+            dd = ph_dd2[ph_dd2["yeast_group_gL"] == yv].copy()
+            if len(dd) == 0:
+                continue
+            g = dd.groupby("pH0", dropna=True)["measured_OD"].mean().reset_index().sort_values("pH0")
+            ax2.plot(g["pH0"], g["measured_OD"], marker="o", lw=1.8, label=label)
+        ax2.legend(loc="best", fontsize=9, frameon=True)
+
+    _plot_line_marker(
+        ax3,
+        nh4_dd,
+        x="nh4cl_gL",
+        title="NH4Cl gradient (set: nh4_gradient)",
+        xlabel="NH4Cl (g/L)",
+        note="YE fixed at 0.2 g/L",
+    )
+    _plot_line_marker(
+        ax4,
+        ac_dd,
+        x="acetate_mM",
+        title="Acetate gradient (set: acetate_gradient)",
+        xlabel="Acetate (mM)",
+    )
+
+    fig.tight_layout(rect=[0, 0, 1, 0.95])
+    fig.savefig(out_png, dpi=220, bbox_inches="tight")
+    plt.close(fig)
+
+
 def _plot_anchor_scatter(
     *,
     features_parquet: Path,
@@ -599,6 +738,11 @@ def _rewrite_png_with_figsize(src_png: Path, out_png: Path, figsize: tuple[int, 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Generate draft paper figures from extracted results.")
     parser.add_argument(
+        "--conditions-csv",
+        default=str(Path("acetate_xai") / "data" / "conditions_experiment.csv"),
+        help="Experimental conditions CSV (must include measured_OD). Used for Fig02A experimental anchors panel.",
+    )
+    parser.add_argument(
         "--anchor-features",
         default=None,
         help="Path to baseline run features.parquet for Fig02E anchor scatter. "
@@ -666,6 +810,14 @@ def main(argv: list[str] | None = None) -> int:
 
     # Fig01: workflow (drawn)
     _plot_workflow(figures_out / "Fig01_workflow.png")
+
+    # Fig02A: experimental anchors (2x2 panels) from conditions_experiment.csv
+    _plot_experiment_anchors_4panel(
+        conditions_csv=Path(args.conditions_csv),
+        out_png=figures_out / "Fig02A_experiment_anchors_4panel.png",
+        out_csv=figures_out / "Fig02A_experiment_anchors_4panel.csv",
+        figsize=(10, 7),
+    )
 
     # Fig02: re-draw without run_id legend (primary_regime colors only)
     _plot_regime_map_primary_only(src_regime_map_csv, figures_out / "Fig02_regime_map.png")
