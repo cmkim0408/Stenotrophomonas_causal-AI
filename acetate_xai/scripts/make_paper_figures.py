@@ -982,6 +982,7 @@ def _load_regime_dataset_normalized(regime_dataset_parquet: Path) -> pd.DataFram
 
     regime_col = _pick_col(df, ["primary_regime", "label"])
     od_col = _pick_col(df, ["measured_OD", "measured_OD_y", "measured_OD_x"])
+    set_col = _pick_col(df, ["set_name", "set_name_y", "set_name_x"])
     run_col = _pick_col(df, ["run_id"])
     cond_col = _pick_col(df, ["condition_id"])
 
@@ -993,6 +994,10 @@ def _load_regime_dataset_normalized(regime_dataset_parquet: Path) -> pd.DataFram
     out = df.copy()
     out["primary_regime"] = out[regime_col].astype(str).str.strip()
     out["measured_OD"] = pd.to_numeric(out[od_col], errors="coerce")
+    if set_col is not None:
+        out["set_name"] = out[set_col].astype(str).str.strip()
+    else:
+        out["set_name"] = ""
 
     if "maintenance_severity" in out.columns:
         out["maintenance_severity"] = pd.to_numeric(out["maintenance_severity"], errors="coerce")
@@ -1013,6 +1018,151 @@ def _load_regime_dataset_normalized(regime_dataset_parquet: Path) -> pd.DataFram
         out["condition_id"] = out[cond_col].astype(str)
 
     return out
+
+
+def _set_wise_correlation_plot(
+    df: pd.DataFrame,
+    *,
+    out_png: Path,
+    out_csv: Path,
+    n_panels: int = 4,
+    seed: int = 42,
+    n_boot: int = 1000,
+) -> None:
+    """
+    Set-wise correlation between measured_OD and objective_value.
+
+    - Computes Pearson R and Spearman rho per set_name.
+    - Saves summary CSV.
+    - Produces a 2x2 faceted scatter plot (up to n_panels sets),
+      each with regression line and bootstrap CI.
+    """
+    import matplotlib
+
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    try:
+        from scipy.stats import pearsonr, spearmanr
+    except Exception as e:  # noqa: BLE001
+        raise RuntimeError(f"Missing dependency: scipy ({e}). Install: pip install scipy") from e
+
+    out_png.parent.mkdir(parents=True, exist_ok=True)
+    out_csv.parent.mkdir(parents=True, exist_ok=True)
+
+    need = {"set_name", "measured_OD", "objective_value"}
+    missing = sorted(need - set(df.columns))
+    if missing:
+        raise ValueError(f"regime_dataset missing required columns for set-wise correlation: {missing}")
+
+    d = df.copy()
+    d["set_name"] = d["set_name"].astype(str).str.strip()
+    d["measured_OD"] = pd.to_numeric(d["measured_OD"], errors="coerce")
+    d["objective_value"] = pd.to_numeric(d["objective_value"], errors="coerce")
+    d = d.dropna(subset=["set_name", "measured_OD", "objective_value"]).copy()
+    d = d[d["set_name"].str.lower() != "nan"]
+    d = d[d["set_name"] != ""]
+
+    # summary table across ALL sets
+    rows = []
+    for s, dd in d.groupby("set_name", dropna=True):
+        if len(dd) < 2:
+            continue
+        x = dd["objective_value"].to_numpy()
+        y = dd["measured_OD"].to_numpy()
+        pr, pp = pearsonr(x, y)
+        sr, sp = spearmanr(x, y)
+        rows.append(
+            {
+                "set_name": str(s),
+                "n": int(len(dd)),
+                "pearson_r": float(pr),
+                "pearson_p": float(pp),
+                "spearman_rho": float(sr),
+                "spearman_p": float(sp),
+            }
+        )
+    summary = pd.DataFrame(rows).sort_values("n", ascending=False)
+    summary.to_csv(out_csv, index=False)
+
+    # Choose up to n_panels sets by n (most data) but keep deterministic tie-break
+    sets = summary["set_name"].tolist()[: int(n_panels)]
+    if not sets:
+        raise ValueError("No set_name groups with >=2 rows to plot.")
+
+    rng = np.random.default_rng(int(seed))
+
+    def _bootstrap_ci(x: np.ndarray, y: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+        # returns (xgrid, yhat, (lo, hi) bands)
+        x = np.asarray(x)
+        y = np.asarray(y)
+        xgrid = np.linspace(float(np.min(x)), float(np.max(x)), 50)
+        if len(x) < 2 or np.allclose(np.var(x), 0.0):
+            yhat = np.full_like(xgrid, float(np.mean(y)))
+            return xgrid, yhat, yhat, yhat
+
+        # base fit
+        slope, intercept = np.polyfit(x, y, deg=1)
+        yhat = slope * xgrid + intercept
+
+        # bootstrap
+        preds = []
+        n = len(x)
+        for _ in range(int(n_boot)):
+            idx = rng.integers(0, n, size=n)
+            xb = x[idx]
+            yb = y[idx]
+            if np.allclose(np.var(xb), 0.0):
+                continue
+            b1, b0 = np.polyfit(xb, yb, deg=1)
+            preds.append(b1 * xgrid + b0)
+        if not preds:
+            return xgrid, yhat, yhat, yhat
+        arr = np.stack(preds, axis=0)
+        lo = np.percentile(arr, 2.5, axis=0)
+        hi = np.percentile(arr, 97.5, axis=0)
+        return xgrid, yhat, lo, hi
+
+    fig, axes = plt.subplots(2, 2, figsize=(10, 7))
+    axes = axes.reshape(-1)
+
+    for i, ax in enumerate(axes):
+        if i >= len(sets):
+            ax.axis("off")
+            continue
+        s = sets[i]
+        dd = d[d["set_name"] == s].copy()
+        x = dd["objective_value"].to_numpy()
+        y = dd["measured_OD"].to_numpy()
+
+        # Correlations
+        pr, _pp = pearsonr(x, y) if len(dd) >= 2 else (float("nan"), float("nan"))
+        sr, _sp = spearmanr(x, y) if len(dd) >= 2 else (float("nan"), float("nan"))
+
+        ax.scatter(x, y, s=26, alpha=0.65, edgecolors="none")
+
+        xgrid, yhat, lo, hi = _bootstrap_ci(x, y)
+        ax.plot(xgrid, yhat, color="#1f77b4", lw=2.0)
+        ax.fill_between(xgrid, lo, hi, color="#1f77b4", alpha=0.18, linewidth=0)
+
+        ax.set_title(str(s), fontsize=12)
+        ax.set_xlabel("Model prediction (objective value)")
+        ax.set_ylabel("Measured OD600 at 32 h")
+        ax.grid(True, alpha=0.25)
+        ax.text(
+            0.98,
+            0.02,
+            f"Pearson R={pr:.2f}\nSpearman ρ={sr:.2f}\n(n={len(dd)})",
+            transform=ax.transAxes,
+            ha="right",
+            va="bottom",
+            fontsize=10,
+            bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="0.7", alpha=0.9),
+        )
+
+    fig.tight_layout()
+    fig.savefig(out_png, dpi=260, bbox_inches="tight")
+    plt.close(fig)
 
 
 def _plot_od_vs_severity_scatter(
@@ -1501,6 +1651,16 @@ def main(argv: list[str] | None = None) -> int:
         out_report_csv=figures_out / "diagnosis_report_22conds.csv",
         od_threshold=0.6,
         seed=42,
+    )
+
+    # Fig02E set-wise correlation (objective_value vs measured_OD) per set_name
+    _set_wise_correlation_plot(
+        reg_norm,
+        out_png=figures_out / "Fig02E_set_wise_correlation.png",
+        out_csv=figures_out / "Fig02E_correlation_summary.csv",
+        n_panels=4,
+        seed=42,
+        n_boot=1000,
     )
 
     # Fig02: re-draw without run_id legend (primary_regime colors only)
