@@ -76,6 +76,63 @@ def _apply_o2lb(model, condition: dict, medium_cfg: dict) -> None:
     rxn.lower_bound = float(o2lb)
 
 
+
+
+def _ensure_xgbclassifier_metadata(model, label_mapping_path="results/xai_xgb/label_mapping.csv"):
+    """
+    Restore sklearn metadata (classes_/n_classes_) that may be missing after
+    XGBoost JSON model loading (xgboost>=2.0).
+
+    Note: In some xgboost versions, `classes_` is a read-only property.
+    We therefore restore via `model._le.classes_` (LabelEncoder).
+    """
+    import os
+    import numpy as np
+
+    # If already present and consistent, nothing to do
+    if hasattr(model, "n_classes_") and getattr(model, "n_classes_", None):
+        # also ensure _le exists
+        if hasattr(model, "_le") and getattr(model._le, "classes_", None) is not None:
+            return
+
+    # Build class list from label_mapping.csv if possible
+    cls = None
+    try:
+        import pandas as pd
+        if os.path.exists(label_mapping_path):
+            lm = pd.read_csv(label_mapping_path)
+            # prefer integer-like column as class id
+            cand = [c for c in lm.columns if getattr(lm[c].dtype, "kind", "") in ("i", "u")]
+            if cand:
+                cls = sorted(lm[cand[0]].dropna().astype(int).unique().tolist())
+            else:
+                cls = list(range(len(lm)))
+    except Exception:
+        cls = None
+
+    if not cls:
+        cls = [0, 1]  # fallback binary
+
+    # Restore via LabelEncoder
+    try:
+        from sklearn.preprocessing import LabelEncoder
+        le = LabelEncoder()
+        le.classes_ = np.array(cls, dtype=int)
+        model._le = le
+    except Exception:
+        # last resort: attach minimal _le-like object
+        class _LE: pass
+        le = _LE()
+        le.classes_ = np.array(cls, dtype=int)
+        model._le = le
+
+    # Restore n_classes_
+    try:
+        model.n_classes_ = len(cls)
+    except Exception:
+        pass
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(
         description="Run sensitivity: frac=0.95, eps=0.5x and 2x."
