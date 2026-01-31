@@ -4,3 +4,12 @@
 Archive created
 [2026-01-31T11:19:45+09:00] Writing SHA256 checksums to results/CHECKSUMS.sha256
 [2026-01-31T11:19:45+09:00] Done
+results/holdout_predictions.csv: OK
+stenotrophomonas_final_archive.tar.gz: OK
+results/sensitivity/frac_0.95_eps_2.0x/features_sensitivity.csv: OK
+results/sensitivity/frac_0.95_eps_2.0x/regime_table_sensitivity.csv: OK
+results/sensitivity/frac_0.95_eps_2.0x/sensitivity_metadata.json: OK
+results/sensitivity/frac_0.95_eps_0.5x/features_sensitivity.csv: OK
+results/sensitivity/frac_0.95_eps_0.5x/regime_table_sensitivity.csv: OK
+results/sensitivity/frac_0.95_eps_0.5x/sensitivity_metadata.json: OK
+results/sensitivity/sensitivity_summary.csv: OK
