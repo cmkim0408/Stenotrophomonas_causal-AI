@@ -32,7 +32,10 @@ from sklearn.metrics import (
 from sklearn.model_selection import StratifiedKFold, KFold
 
 ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_PARQUET = ROOT / "results" / "regime_dataset.parquet"
+LEGACY_PARQUET = ROOT / "results" / "regime_dataset.parquet"
+EXTENDED_PARQUET = ROOT / "revision_runs" / "iscience_rev1" / "regime_dataset_extended.parquet"
+# Auto-promote to extended once the FVA campaign extension exists.
+DEFAULT_PARQUET = EXTENDED_PARQUET if EXTENDED_PARQUET.exists() else LEGACY_PARQUET
 DEFAULT_ANCHORS_YAML = ROOT / "acetate_xai" / "configs" / "anchors.yaml"
 REVISION_OUT = ROOT / "revision_runs" / "iscience_rev1"
 
@@ -81,29 +84,33 @@ def load_anchors_yaml(path: Path | str = DEFAULT_ANCHORS_YAML) -> list[dict[str,
     return cfg.get("anchors", [])
 
 
-# Curated paper-aligned reaction IDs that actually exist in the 120-width
-# superset of results/regime_dataset.parquet. Note: the parquet's width__
-# columns are alphabetically truncated at "FACOAL161", so paper-named TCA
-# enzymes beyond 'F' (MDH, ICDH, ICL, MALS, PFK, PYK, NDH-1/2, PPC, PCK)
-# are NOT present and cannot be included here. This is documented in the
-# revision REPORT.md as a known dataset limitation.
+# Curated paper-aligned reaction IDs that exist in the iSO1_933 model.
+# After the extended FVA campaign (revision_runs/.../extended_fva/), the
+# deployed dataset's width__ universe expands from 120 to ~300 columns and
+# now covers the full paper-narrative TCA / glyoxylate / glycolysis /
+# respiration anchors (MDH/ICDH/ICL/MALS/PYK/PPC/NADH16pp/FUM, etc.).
+# curated_paper_panel(df) intersects this list with whatever width__ columns
+# are present, so the same constant works on both the legacy 120-width and
+# the extended ~300-width parquets.
 PAPER_CURATED_RXNS = (
     # Limiting / uptake exchanges (paper anchors)
     "EX_o2_e", "EX_nh4_e", "EX_pi_e", "EX_co2_e", "EX_h_e", "EX_h2o_e",
     # Energy / respiration (paper SHAP top)
-    "ATPS4rpp", "ADK1", "AKGDH", "CYO1_KT",
-    # Acetate uptake & TCA pieces present in this superset
-    "CS", "ACS", "ACSERL", "ACONT", "ACONTa", "ACONTb",
-    # Glycolytic
-    "ENO", "ENOPH",
+    "ATPS4rpp", "ADK1", "ATPM", "AKGDH", "CYO1_KT", "NADH16pp",
+    # TCA cycle (paper Fig 4 narrative — added via extended FVA)
+    "CS", "ACONT", "ACONTa", "ACONTb",
+    "ICDHyr", "ICDHx", "ICL", "MALS",
+    "MDH", "MDH2", "MDH3", "FUM",
+    # Acetate uptake / activation
+    "ACS", "ACSERL",
+    # Glycolytic / anaplerotic
+    "ENO", "ENOPH", "PYK", "PYK3", "PPC",
     # Acetolactate synthase variants (paper severity SHAP)
-    "ACLS", "ACLS_a", "ACLSa", "ACLSb",
+    "ACLS", "ACLSa", "ACLSb",
     # ADC synthase / APS reductase (paper severity TOP-2)
     "ADCS", "APSR", "APSR2",
     # N/aa biosynthesis touched by paper text
-    "ACGS", "ARGSL", "ARGSS", "ASPTA",
-    # Pyrophosphatase / fumarase analogue
-    "CMt2ppi", "DHORDfum",
+    "GLNS", "GLUDy", "ACGS", "ARGSL", "ARGSS", "ASPTA",
 )
 
 

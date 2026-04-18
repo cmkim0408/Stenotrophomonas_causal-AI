@@ -163,7 +163,7 @@ def main() -> None:
           "",
           "- **A** Inputs only — uptake bounds (acetate, oxygen, ammonium, phosphate)",
           "- **B** GEM summary — biomass objective + uptake fluxes + sat-flag fluxes",
-          "- **C** Curated widths — paper-aligned 31-reaction width__ panel (ours)",
+          f"- **C** Curated widths — paper-aligned {len(curated)}-reaction width__ panel (ours)",
           "",
           "## Headline numbers",
           "",
@@ -171,17 +171,27 @@ def main() -> None:
           metrics.to_string(index=False),
           "```",
           "",
-          "## Interpretation",
+          "## Interpretation (conservative framing)",
           "",
-          ("- Inputs-only baselines establish a floor: they capture the obvious "
-           "regime split (high O2 vs low O2) but cannot resolve nutrient-limited "
-           "vs O2-limited conditions when uptake bounds overlap."),
-          ("- GEM summary baselines add the FBA solution + saturation flags. "
-           "These already contain most of the regime-discriminating signal "
-           "(by construction of the regime label)."),
-          ("- Curated widths + XGBoost (ours) achieves comparable or slightly "
-           "better classification AND retains a flexibility-collapse interpretation "
-           "for severity regression — see `01_feature_panel_ablation/`."),
+          ("- Inputs-only baselines establish a floor on severity regression "
+           "(R² ≤ 0.86) but reach competitive macro-F1 on classification "
+           "(RandomForest / XGBoost ≈ 0.96), reflecting the strong O2_limited "
+           "majority class."),
+          ("- GEM-summary baselines achieve high R² (≥ 0.93). **Caveat:** the "
+           "FBA objective is in this feature vector by construction "
+           "(severity = obj/obj_max), so its R² ≈ 0.998 reflects "
+           "target-construction overlap, not new predictive content."),
+          ("- On the same curated width panel, all three learners perform "
+           "competitively (macro-F1 0.957–1.000; RMSE 0.005–0.031). The "
+           "diagnostic signal is therefore carried primarily by the "
+           "**flexibility-based representation**, not by a uniquely optimal "
+           "learner. Random forest reached macro-F1 = 1.000 on this small "
+           "dataset but lacks SHAP-equivalent interpretability of the same "
+           "form; XGBoost is used as the consistent explainable learner."),
+          ("- **Headline message:** the revision's claim is *not* that "
+           "XGBoost is uniquely optimal. The claim is that flexibility-based "
+           "features carry meaningful diagnostic signal and support an "
+           "interpretable diagnostic workflow across model classes."),
           ]
     (OUT["ws"] / "benchmark_summary.md").write_text("\n".join(md) + "\n", encoding="utf-8")
     print(f"[02 benchmark] wrote summary → {OUT['ws'] / 'benchmark_summary.md'}")

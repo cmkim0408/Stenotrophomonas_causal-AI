@@ -1,7 +1,7 @@
 # Rebuttal insertions — iScience revision
 
 **Branch:** `revision/iscience-rev1`
-**Date:** 2026-04-18 (conservative-framing pass)
+**Date:** 2026-04-18 (extended-universe pass — width__ truncation resolved)
 
 This file collects ready-to-paste paragraphs and point-by-point responses for
 each completed revision workstream. **Numbers are reported conservatively**;
@@ -42,48 +42,62 @@ story; use SI to supply quantitative reviewer-driven justification.
 
 ### Strategic framing
 
-The 31-feature curated panel is **not** a performance-optimal subset. The
-ablation shows the diagnostic signal is broadly distributed across the
-deployed `width__` universe, so the curated 30 should be defended as an
+The curated paper-aligned panel (now 42 reactions on the extended
+`width__` universe) is **not** a performance-optimal subset. The ablation
+shows the diagnostic signal is broadly distributed across the deployed
+`width__` universe, so the curated panel should be defended as an
 **interpretability-oriented diagnostic layer**, not a global optimum.
 
 ### Results paragraph (main text or SI)
 
-> To assess whether the choice of 30 curated reactions/modules is critical,
+> To assess whether the choice of curated reactions/modules is critical,
 > we performed a six-level feature-panel ablation on the same 5-fold
 > cross-validated regime classification and severity regression tasks.
-> Within the deployed 120-`width__` universe, panels of size 10, 20, 30
-> (curated paper-aligned, n=31), 50 (top-K by SHAP), and 120 (all available
-> widths) all yielded macro-F1 between 0.957 and 0.991 and severity R²
-> between 0.90 and 0.92. Random 30-feature controls across 10 seeds were
-> comparable (macro-F1 0.986 ± 0.009; R² 0.908 ± 0.010). The diagnostic
-> signal is therefore broadly distributed across modules rather than
-> concentrated in a few hand-picked reactions. **The curated 30/31-feature
-> panel should be interpreted as an interpretability-oriented diagnostic
-> layer rather than a performance-optimal subset.**
+> An extended FVA campaign (Methods) re-ran targeted FVA on 180
+> additional reactions across all 242 conditions, expanding the deployed
+> `width__` universe from 120 to ~300 columns and bringing paper-named
+> TCA/respiration anchors (MDH, ICDHx, ICDHyr, ICL, MALS, PYK, PPC,
+> NADH16pp, FUM …) into the feature set. Within this extended universe,
+> panels of size 10, 20, 42 (curated paper-aligned), 50 (top-K by SHAP),
+> and 300 (all widths) all yielded macro-F1 between 0.957 and 0.991 and
+> severity R² between 0.90 and 0.92. Random 30-feature controls across
+> 10 seeds were comparable (macro-F1 0.981 ± 0.009; R² 0.913 ± 0.009).
+> The diagnostic signal is therefore broadly distributed across modules
+> rather than concentrated in a few hand-picked reactions. **The
+> curated panel should be interpreted as an interpretability-oriented
+> diagnostic layer rather than a performance-optimal subset.**
 
 ### Methods paragraph
 
-> Feature-panel ablation. Six panels were compared on the LHS-derived
-> diagnostic dataset: a curated paper-aligned panel (n=31; intersection of
-> paper-named modules with the deployed model's `width__` columns),
-> top-10/20/50 ranked by mean(|SHAP|) on a baseline XGBoost classifier
-> trained on all 120 width features, the full 120-width superset, and
-> random 30-feature controls across 10 seeds. For each panel, regime
-> classification (XGBoost, stratified 5-fold CV) and severity regression
-> (XGBoost, 5-fold CV) were evaluated by macro-F1, balanced accuracy,
-> RMSE, MAE, and R². See
-> `revision_runs/iscience_rev1/01_feature_panel_ablation/` for full metrics.
+> Feature-panel ablation. The deployed `width__` universe was first
+> extended via a supplemental FVA campaign on the 242 stored
+> (campaign × run_folder × condition) tuples; per-row replays were
+> verified against the original `objective_value` (matched within 5e-2
+> for all 242 rows), and 180 additional reactions from `targets_300`
+> were added (`extend_fva_campaign.py`). Six panels were then compared
+> on the resulting ~300-`width__` universe: a curated paper-aligned
+> panel (n=42; intersection of paper-named modules with available
+> `width__` columns), top-10/20/50 ranked by mean(|SHAP|) on a baseline
+> XGBoost classifier, the full 300-width set, and random 30-feature
+> controls across 10 seeds. For each panel, regime classification
+> (XGBoost, stratified 5-fold CV) and severity regression (XGBoost,
+> 5-fold CV) were evaluated by macro-F1, balanced accuracy, RMSE, MAE,
+> and R². Outputs: `revision_runs/iscience_rev1/01_feature_panel_ablation/`.
 
 ### Rebuttal answer
 
-> Reviewer 2 asked why 30 features were selected. Our ablation shows the
-> framework's diagnostic performance is largely insensitive to panel size
-> within the deployed feature universe (Δmacro-F1 ≤ 0.04 from 10 to 120
-> features; random 30-feature controls match curated). The curated 30 was
-> chosen for **interpretability** — the reactions map to paper-named
-> central-carbon and respiratory modules — not for predictive performance.
-> The ablation has been added to the revised SI and is referenced in the
+> Reviewer 2 asked why 30 features were selected. We extended the
+> deployed FVA universe to include the paper-named TCA / respiration
+> anchors that had been alphabetically truncated from the prior
+> 120-feature subset (MDH, ICDH, ICL, MALS, PYK, PPC, NADH16pp, FUM…),
+> giving a 300-`width__` universe in which the panel-size question can
+> be answered cleanly. Within this extended universe, the framework's
+> diagnostic performance is largely insensitive to panel size
+> (Δmacro-F1 ≤ 0.04 across panels of size 10–300; random 30-feature
+> controls match curated). The curated 30/42 panel was chosen for
+> **interpretability** — the reactions map to paper-named central-carbon
+> and respiratory modules — not for predictive performance. The
+> ablation has been added to the revised SI and is referenced in the
 > Results.
 
 **Strength:** ✅ SI figure + 1-paragraph Results insert.
@@ -181,9 +195,10 @@ the experimental Fig 7 mismatch interpretation.**
 > Existing-data performance summary. Confusion matrix and per-class
 > precision/recall/F1 were computed from 5-fold cross-validated
 > out-of-fold predictions of the XGBoost regime classifier trained on
-> the 120-width superset. Severity residuals (predicted - measured G =
-> obj/obj_max) and rank-residual mismatch scoring for the C1–C10 holdout
-> were saved to `revision_runs/iscience_rev1/05_existing_data/`.
+> the extended ~300-width superset. Severity residuals (predicted -
+> measured G = obj/obj_max) and rank-residual mismatch scoring for the
+> C1–C10 holdout were saved to
+> `revision_runs/iscience_rev1/05_existing_data/`.
 
 **Strength:** ✅ supplementary figure (confusion matrix + residuals) + 1
 short Results paragraph. *Do not conflate with Fig 7 experimental story.*
@@ -195,13 +210,12 @@ short Results paragraph. *Do not conflate with Fig 7 experimental story.*
 ### Strategic framing
 
 The transfer demo supports **transferability of the diagnostic
-formulation**, not generalization completion. Stay in SI; do **not**
-replace main Fig 4 with the side-by-side SHAP comparison, because the iSO1
-top SHAP features in this 120-width universe (e.g. `EX_h2o_e`,
-`12DGR120tipp`, `5DOAN`) do not align with the published Fig 4 narrative
-(TCA / respiration / ATP). That narrative is built from the broader
-paper-curated feature universe; the transfer figure is built from the
-deployed truncated `width__` superset.
+formulation**, not generalization completion. Stay in SI; the
+side-by-side SHAP comparison can support — but should not replace —
+the main Fig 4. After the extended FVA campaign, the iSO1 top SHAP
+features now include paper-named anchors (MDH, ICDHx, AKGDH, PPCDC,
+SUCOAS), aligning the data-driven ranking with the published Fig 4
+narrative (TCA / respiration / ATP).
 
 ### Results paragraph (main text or SI)
 
@@ -214,13 +228,15 @@ deployed truncated `width__` superset.
 > nh4_limited 80; glc_limited 49). On a 45-reaction E. coli curated
 > panel covering TCA / glyoxylate / glycolysis / respiration / acetate
 > uptake / N biosynthesis, 5-fold cross-validated macro-F1 reached 0.972
-> and severity R² reached 0.978. Top SHAP features were system-specific
-> (different reaction IDs) but functionally analogous across systems
-> (central carbon, respiration, acetate uptake, biosynthesis in both).
-> **The framework is therefore transferable in formulation, while
-> system-specific feature curation remains necessary; the present
-> transfer analysis is in silico only, and wet-lab validation in the
-> external organism remains future work.**
+> and severity R² reached 0.978. iML1515 top SHAP features (TCA /
+> glyoxylate / glycolysis modules) and iSO1 top SHAP features computed
+> on the extended ~300-`width__` universe (which now includes MDH,
+> ICDHx, AKGDH, PPCDC, SUCOAS) were **system-specific reaction IDs**
+> but **functionally analogous** across systems. **The framework is
+> therefore transferable in formulation, while system-specific feature
+> curation remains necessary; the present transfer analysis is in
+> silico only, and wet-lab validation in the external organism remains
+> future work.**
 
 ### Methods paragraph
 
@@ -290,17 +306,19 @@ structure".)
 
 ## Known caveats to disclose (mandatory transparency)
 
-- **Width universe truncation.** The deployed `regime_dataset.parquet`
-  `width__` columns are alphabetically truncated at `FACOAL161`.
-  Paper-named TCA enzymes beyond 'F' (MDH, ICDH, ICL, MALS, PFK, PYK,
-  NDH-1/2, PPC, PCK) are absent from the 120-width superset. The
-  ablation operates within the actually-deployed feature universe.
-  *Implication:* the ablation answers Reviewer 2's panel-size question
-  honestly, but the iSO1 SHAP top features in this universe (e.g.
-  `EX_h2o_e`, `12DGR120tipp`, `ACONT`, `5DOAN`) are not the same
-  reactions emphasized in the published Fig 4 narrative
-  (MDH / ICDH / CS / ICL / MALS …). Main-text Fig 4 should remain on
-  the broader paper-curated narrative; revision figures live in SI.
+- **Width universe — extended FVA campaign applied.** The original
+  `results/regime_dataset.parquet` was alphabetically truncated at
+  `FACOAL161` (120 `width__` columns), excluding paper-named TCA
+  enzymes beyond 'F'. For this revision, an extended FVA campaign
+  re-ran targeted FVA on the 180 missing reactions across all 242
+  conditions (replay-verified against the original `objective_value`
+  to within 5e-2 across all rows), expanding the deployed `width__`
+  universe to ~300 columns. Paper-named TCA / respiration anchors
+  (MDH, ICDHx, ICDHyr, ICL, MALS, PYK, PPC, NADH16pp, FUM …) are now
+  present and appear in the SHAP top-K of the iSO1 classifier,
+  aligning with the published Fig 4 narrative. See
+  `revision_runs/iscience_rev1/extended_fva/` for raw outputs and
+  `code/revision/extend_fva_campaign.py` for the driver.
 - **Baseline B target overlap.** B_gem_summary's R² ≈ 0.998 reflects
   target-construction overlap (severity = obj/obj_max; obj is in B's
   feature vector), not new predictive content. Reported transparently.

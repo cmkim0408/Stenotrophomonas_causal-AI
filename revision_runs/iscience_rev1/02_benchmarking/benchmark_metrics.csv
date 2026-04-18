@@ -5,6 +5,6 @@ A_inputs_only,4,XGBoost,0.9581,0.9651,0.9767,0.9,0.9976,XGBoost,0.04308,0.01763,
 B_gem_summary,9,LogReg,0.9341,0.9476,0.9524,0.8571,0.9929,ElasticNet,0.00529,0.00383,0.9977
 B_gem_summary,9,RandomForest,0.9492,0.9492,0.9524,0.9,0.9953,RandomForest,0.02991,0.00253,0.9263
 B_gem_summary,9,XGBoost,0.9492,0.9492,0.9524,0.9,0.9953,XGBoost,0.0299,0.00258,0.9264
-C_curated_widths,31,LogReg,0.976,0.9841,0.9756,0.9524,1.0,ElasticNet,0.00515,0.0035,0.9978
-C_curated_widths,31,RandomForest,1.0,1.0,1.0,1.0,1.0,RandomForest,0.03113,0.0026,0.9202
-C_curated_widths,31,XGBoost,0.9565,0.9349,0.9268,0.9474,0.9953,XGBoost,0.03085,0.00319,0.9216
+C_curated_widths,42,LogReg,0.976,0.9841,0.9756,0.9524,1.0,ElasticNet,0.00517,0.00352,0.9978
+C_curated_widths,42,RandomForest,1.0,1.0,1.0,1.0,1.0,RandomForest,0.03155,0.00265,0.918
+C_curated_widths,42,XGBoost,0.9565,0.9349,0.9268,0.9474,0.9953,XGBoost,0.03085,0.00319,0.9216

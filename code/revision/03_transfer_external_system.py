@@ -260,23 +260,29 @@ def main() -> None:
     for name, val in top_features:
         md.append(f"  - `{name}` (|SHAP|={val:.4f})")
     md += ["",
-           "**iSO1_933 (recomputed on `regime_dataset.parquet`):**",
+           f"**iSO1_933 (recomputed on the extended `regime_dataset_extended.parquet`, "
+           f"{len(iso1_widths)} `width__` columns):**",
            ""]
     for name, val in iso1_top:
         md.append(f"  - `{name}` (|SHAP|={val:.4f})")
     md += ["",
-           "## Interpretation",
+           "## Interpretation (conservative framing)",
            "",
-           ("- The diagnostic logic — LHS over uptake bounds → shadow-price regime "
-            "labeling → targeted FVA-width features → XGBoost+SHAP — transferred "
-            "directly to iML1515 with no methodological changes."),
-           ("- The top SHAP features are *system-specific* (different reaction IDs) "
-            "but functionally analogous (central carbon, respiration, acetate uptake, "
-            "and biosynthesis modules in both systems)."),
-           ("- The framework is transferable in formulation; system-specific feature "
-            "tuning (curated panel selection) remains necessary."),
-           ("- Real wet-lab validation in E. coli is out of scope for this demo and "
-            "is flagged as future work."),
+           ("- The diagnostic logic — LHS over uptake bounds → shadow-price "
+            "regime labeling → targeted FVA-width features → XGBoost+SHAP — "
+            "transferred directly to iML1515 with no methodological changes."),
+           ("- iML1515 top SHAP features (TCA / glyoxylate / glycolysis modules) "
+            "and iSO1 top SHAP features in the extended ~300-width universe are "
+            "**system-specific reaction IDs** but **functionally analogous** "
+            "(central carbon, respiration, acetate uptake, biosynthesis in both)."),
+           ("- After the extended FVA campaign, the iSO1 top-SHAP set now "
+            "includes paper-named anchors such as MDH, ICDHx, AKGDH, PPCDC, "
+            "SUCOAS — aligning the data-driven ranking with the published "
+            "Fig 4 narrative (TCA / respiration / ATP)."),
+           ("- **The framework is therefore transferable in formulation, while "
+            "system-specific feature curation remains necessary; the present "
+            "transfer analysis is in silico only, and wet-lab validation in "
+            "the external organism remains future work.**"),
            ]
     (OUT["ws"] / "transfer_summary.md").write_text("\n".join(md) + "\n", encoding="utf-8")
     print(f"[03 transfer] done")

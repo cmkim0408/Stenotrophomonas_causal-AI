@@ -125,8 +125,19 @@ def main() -> None:
           "",
           f"- N conditions: {len(df)}  ·  classes: {classes}",
           f"- Universe: {len(u.width_cols(df))} `width__` columns "
-          f"(parquet alphabetically truncated at 'FACOAL161'; M/I/N-prefixed paper anchors absent)",
+          f"(extended FVA campaign — see `revision_runs/iscience_rev1/extended_fva/`)",
           f"- Random-30 controls: {(metrics['panel_kind']=='random').sum()} seeds",
+          "",
+          "## Conservative interpretation",
+          "",
+          "The curated paper-aligned panel should be interpreted as an "
+          "**interpretability-oriented diagnostic layer rather than a "
+          "performance-optimal subset**. Within the extended `width__` "
+          "universe (~300 columns), performance is largely insensitive to "
+          "panel size (Δmacro-F1 ≤ 0.04 across panels of size 10–300; "
+          "random-30 controls match curated). Reviewer 2's \"why 30?\" question "
+          "is answered on grounds of **mechanistic interpretability**, not "
+          "predictive optimality.",
           "",
           "## Headline numbers",
           ""]

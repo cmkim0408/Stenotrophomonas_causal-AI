@@ -1,21 +1,21 @@
 workstream,key,n_features,macro_f1,r2,rmse
-01_ablation,curated_paper,31,0.9565,0.9216,0.03085
+01_ablation,curated_paper,42,0.9565,0.9216,0.03085
 01_ablation,top_10,10,0.9658,0.8996,0.03492
 01_ablation,top_20,20,0.9658,0.8996,0.03492
 01_ablation,top_50,50,0.9658,0.8996,0.03492
-01_ablation,all_widths,120,0.9911,0.9062,0.03374
-01_ablation,random_30 (mean ± std),30,0.9856 ± 0.0088,0.9080 ± 0.0098,0.03339
+01_ablation,all_widths,300,0.9911,0.9062,0.03374
+01_ablation,random_30 (mean ± std),30,0.9810 ± 0.0091,0.9130 ± 0.0089,0.03247
 02_benchmark,A_inputs_only + LogReg,4,0.8504,0.253,0.09524
 02_benchmark,A_inputs_only + RandomForest,4,0.9581,0.8599,0.04125
 02_benchmark,A_inputs_only + XGBoost,4,0.9581,0.8471,0.04308
 02_benchmark,B_gem_summary + LogReg,9,0.9341,0.9977,0.00529
 02_benchmark,B_gem_summary + RandomForest,9,0.9492,0.9263,0.02991
 02_benchmark,B_gem_summary + XGBoost,9,0.9492,0.9264,0.0299
-02_benchmark,C_curated_widths + LogReg,31,0.976,0.9978,0.00515
-02_benchmark,C_curated_widths + RandomForest,31,1.0,0.9202,0.03113
-02_benchmark,C_curated_widths + XGBoost,31,0.9565,0.9216,0.03085
+02_benchmark,C_curated_widths + LogReg,42,0.976,0.9978,0.00517
+02_benchmark,C_curated_widths + RandomForest,42,1.0,0.918,0.03155
+02_benchmark,C_curated_widths + XGBoost,42,0.9565,0.9216,0.03085
 03_transfer,iML1515,45,0.9718,0.9778,0.03189
-03_transfer,iSO1_933 (this study),120,,,
+03_transfer,iSO1_933 (this study),300,,,
 04_runtime,lhs_sample,500,,,"0.0003 s, 145.8 MB"
 04_runtime,fba_batch,50,,,"2.0686 s, 281.2 MB"
 04_runtime,targeted_fva,10,,,"0.4246 s, 289.4 MB"

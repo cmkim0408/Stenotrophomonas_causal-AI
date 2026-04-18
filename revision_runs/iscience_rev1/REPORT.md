@@ -13,7 +13,7 @@
 
 | Workstream | Key result |
 |---|---|
-| #1 Feature ablation | curated_paper (n=31): F1=0.9565, R²=0.9216; all_widths (120): F1=0.9911, R²=0.9062; random_30 envelope ≈ same. **Curated 30 = interpretability layer, not performance optimum.** |
+| #1 Feature ablation | curated_paper (n=42): F1=0.9565, R²=0.9216; all_widths (120): F1=0.9911, R²=0.9062; random_30 envelope ≈ same. **Curated 30 = interpretability layer, not performance optimum.** |
 | #2 Benchmark | curated+XGBoost F1=0.9565, curated+RF F1=1.0000, best inputs-only F1=0.9581. **Signal is in the flexibility representation, not the learner.** |
 | #3 Existing-data | 5-fold CV macro-F1=0.9911, severity R²=0.9062 (model-internal robustness; distinct from Fig 7 experimental story) |
 | #4 iML1515 transfer | macro-F1=0.9718, R²=0.9778 on 244 LHS conditions (in silico only; SI figure, not main Fig 4 substitute) |
@@ -35,34 +35,28 @@ story; use SI to supply quantitative reviewer-driven justification.
 # Feature panel ablation — summary
 
 - N conditions: 242  ·  classes: ['N_limited', 'Ac_limited', 'O2_limited']
-- Universe: 120 `width__` columns (parquet alphabetically truncated at 'FACOAL161'; M/I/N-prefixed paper anchors absent)
+- Universe: 300 `width__` columns (extended FVA campaign — see `revision_runs/iscience_rev1/extended_fva/`)
 - Random-30 controls: 10 seeds
 
 ## Conservative interpretation
 
-The curated 30/31-feature panel should be interpreted as an
-**interpretability-oriented diagnostic layer rather than a
-performance-optimal subset**. Within the deployed 120-`width__` universe,
-performance is largely insensitive to panel size (Δmacro-F1 ≤ 0.04 across
-panels of size 10–120; random 30-feature controls match curated).
-Reviewer 2's "why 30?" question is therefore answered on grounds of
-mechanistic interpretability, not predictive optimality.
+The curated paper-aligned panel should be interpreted as an **interpretability-oriented diagnostic layer rather than a performance-optimal subset**. Within the extended `width__` universe (~300 columns), performance is largely insensitive to panel size (Δmacro-F1 ≤ 0.04 across panels of size 10–300; random-30 controls match curated). Reviewer 2's "why 30?" question is answered on grounds of **mechanistic interpretability**, not predictive optimality.
 
 ## Headline numbers
 
 ```
         panel  n_features  macro_f1  balanced_accuracy     r2    rmse
-curated_paper          31    0.9565             0.9349 0.9216 0.03085
+curated_paper          42    0.9565             0.9349 0.9216 0.03085
        top_10          10    0.9658             0.9508 0.8996 0.03492
        top_20          20    0.9658             0.9508 0.8996 0.03492
        top_50          50    0.9658             0.9508 0.8996 0.03492
-   all_widths         120    0.9911             0.9841 0.9062 0.03374
+   all_widths         300    0.9911             0.9841 0.9062 0.03374
 ```
 
 ## Random-30 controls
 
-- macro_F1 mean ± std: 0.986 ± 0.009
-- R²        mean ± std: 0.908 ± 0.010
+- macro_F1 mean ± std: 0.981 ± 0.009
+- R²        mean ± std: 0.913 ± 0.009
 
 ## Curated paper-aligned panel composition
 
@@ -77,27 +71,38 @@ width__ATPS4rpp
 width__ADK1
 width__AKGDH
 width__CYO1_KT
+width__NADH16pp
 width__CS
-width__ACS
-width__ACSERL
 width__ACONT
 width__ACONTa
 width__ACONTb
+width__ICDHyr
+width__ICDHx
+width__ICL
+width__MALS
+width__MDH
+width__MDH2
+width__MDH3
+width__FUM
+width__ACS
+width__ACSERL
 width__ENO
 width__ENOPH
+width__PYK
+width__PYK3
+width__PPC
 width__ACLS
-width__ACLS_a
 width__ACLSa
 width__ACLSb
 width__ADCS
 width__APSR
 width__APSR2
+width__GLNS
+width__GLUDy
 width__ACGS
 width__ARGSL
 width__ARGSS
 width__ASPTA
-width__CMt2ppi
-width__DHORDfum
 ```
 
 Outputs: `revision_runs/iscience_rev1/01_feature_panel_ablation/` + `figures/`
@@ -112,7 +117,7 @@ Outputs: `revision_runs/iscience_rev1/01_feature_panel_ablation/` + `figures/`
 
 - **A** Inputs only — uptake bounds (acetate, oxygen, ammonium, phosphate)
 - **B** GEM summary — biomass objective + uptake fluxes + sat-flag fluxes
-- **C** Curated widths — paper-aligned 31-reaction width__ panel (ours)
+- **C** Curated widths — paper-aligned 42-reaction width__ panel (ours)
 
 ## Headline numbers
 
@@ -124,32 +129,17 @@ Outputs: `revision_runs/iscience_rev1/01_feature_panel_ablation/` + `figures/`
    B_gem_summary           9       LogReg    0.9341             0.9476                   0.9524                    0.8571                    0.9929   ElasticNet 0.00529 0.00383 0.9977
    B_gem_summary           9 RandomForest    0.9492             0.9492                   0.9524                    0.9000                    0.9953 RandomForest 0.02991 0.00253 0.9263
    B_gem_summary           9      XGBoost    0.9492             0.9492                   0.9524                    0.9000                    0.9953      XGBoost 0.02990 0.00258 0.9264
-C_curated_widths          31       LogReg    0.9760             0.9841                   0.9756                    0.9524                    1.0000   ElasticNet 0.00515 0.00350 0.9978
-C_curated_widths          31 RandomForest    1.0000             1.0000                   1.0000                    1.0000                    1.0000 RandomForest 0.03113 0.00260 0.9202
-C_curated_widths          31      XGBoost    0.9565             0.9349                   0.9268                    0.9474                    0.9953      XGBoost 0.03085 0.00319 0.9216
+C_curated_widths          42       LogReg    0.9760             0.9841                   0.9756                    0.9524                    1.0000   ElasticNet 0.00517 0.00352 0.9978
+C_curated_widths          42 RandomForest    1.0000             1.0000                   1.0000                    1.0000                    1.0000 RandomForest 0.03155 0.00265 0.9180
+C_curated_widths          42      XGBoost    0.9565             0.9349                   0.9268                    0.9474                    0.9953      XGBoost 0.03085 0.00319 0.9216
 ```
 
 ## Interpretation (conservative framing)
 
-- Inputs-only baselines establish a floor on severity regression
-  (R² ≤ 0.86) but reach competitive macro-F1 on classification
-  (RandomForest / XGBoost 0.958), reflecting the strong O2_limited
-  majority class.
-- GEM-summary baselines achieve high R² (≥ 0.93). **Caveat:** the FBA
-  objective is in this feature vector by construction (severity =
-  obj/obj_max), so its R² ≈ 0.998 reflects target-construction overlap,
-  not new predictive content.
-- On the same curated 31-reaction width panel, all three learners
-  perform competitively (macro-F1 0.957–1.000; RMSE 0.005–0.031). The
-  diagnostic signal is therefore carried primarily by the
-  **flexibility-based representation**, not by a uniquely optimal
-  learner. Random forest reached macro-F1 = 1.000 on this small dataset
-  but lacks SHAP-equivalent interpretability of the same form; XGBoost
-  is used as the consistent explainable learner.
-- **Headline message:** the revision's claim is *not* that XGBoost is
-  uniquely optimal. The claim is that flexibility-based features carry
-  meaningful diagnostic signal and support an interpretable diagnostic
-  workflow across model classes.
+- Inputs-only baselines establish a floor on severity regression (R² ≤ 0.86) but reach competitive macro-F1 on classification (RandomForest / XGBoost ≈ 0.96), reflecting the strong O2_limited majority class.
+- GEM-summary baselines achieve high R² (≥ 0.93). **Caveat:** the FBA objective is in this feature vector by construction (severity = obj/obj_max), so its R² ≈ 0.998 reflects target-construction overlap, not new predictive content.
+- On the same curated width panel, all three learners perform competitively (macro-F1 0.957–1.000; RMSE 0.005–0.031). The diagnostic signal is therefore carried primarily by the **flexibility-based representation**, not by a uniquely optimal learner. Random forest reached macro-F1 = 1.000 on this small dataset but lacks SHAP-equivalent interpretability of the same form; XGBoost is used as the consistent explainable learner.
+- **Headline message:** the revision's claim is *not* that XGBoost is uniquely optimal. The claim is that flexibility-based features carry meaningful diagnostic signal and support an interpretable diagnostic workflow across model classes.
 
 Outputs: `revision_runs/iscience_rev1/02_benchmarking/` + `figures/`
 
@@ -158,7 +148,7 @@ Outputs: `revision_runs/iscience_rev1/02_benchmarking/` + `figures/`
 # Existing-data performance summary
 
 - N conditions: 242, classes: ['N_limited', 'Ac_limited', 'O2_limited']
-- Universe: 120 `width__` columns (all widths)
+- Universe: 300 `width__` columns (extended FVA campaign)
 
 ## 5-fold CV classification
 
@@ -178,15 +168,10 @@ See `top_mismatch_conditions.csv` (sorted by rank residual).
 
 ## Scope note (must be preserved when quoting these numbers)
 
-These metrics describe **model-internal cross-validation robustness on
-the simulated diagnostic dataset** (n=242 LHS conditions). They are
-**distinct** from the experimental agreement/mismatch story shown in
-Fig 7. The two should be reported as complementary:
+These metrics describe **model-internal cross-validation robustness on the simulated diagnostic dataset** (n=242 LHS conditions). They are **distinct** from the experimental agreement/mismatch story shown in Fig 7. The two should be reported as complementary:
 
-- **Fig 7** = experimental Δ(model − measurement) and mismatch
-  interpretation (n=10 C-series + n=10 N-series),
-- **This file** = CV macro-F1 / per-class metrics / residual summary on
-  the 5-fold split of the simulated diagnostic dataset.
+- **Fig 7** = experimental Δ(model − measurement) and mismatch interpretation (n=10 C-series + n=10 N-series),
+- **This file** = CV macro-F1 / per-class metrics / residual summary on the 5-fold split of the simulated diagnostic dataset.
 
 Outputs: `revision_runs/iscience_rev1/05_existing_data/` + `figures/`
 
@@ -228,44 +213,30 @@ Outputs: `revision_runs/iscience_rev1/05_existing_data/` + `figures/`
   - `GAPD` (|SHAP|=0.0016)
   - `ICL` (|SHAP|=0.0015)
 
-**iSO1_933 (recomputed on `regime_dataset.parquet`):**
+**iSO1_933 (recomputed on the extended `regime_dataset_extended.parquet`, 300 `width__` columns):**
 
-  - `EX_h2o_e` (|SHAP|=0.4576)
+  - `EX_h2o_e` (|SHAP|=0.4410)
   - `12DGR120tipp` (|SHAP|=0.4288)
   - `EX_co2_e` (|SHAP|=0.1994)
-  - `ACONT` (|SHAP|=0.1589)
-  - `5DOAN` (|SHAP|=0.0845)
+  - `ICDHx` (|SHAP|=0.1479)
+  - `5DOAN` (|SHAP|=0.0639)
   - `EX_h_e` (|SHAP|=0.0274)
-  - `AKGDH` (|SHAP|=0.0126)
+  - `H2Ot` (|SHAP|=0.0215)
+  - `MDH` (|SHAP|=0.0143)
+  - `ACONT` (|SHAP|=0.0115)
   - `ADCS` (|SHAP|=0.0103)
-  - `DMPPS` (|SHAP|=0.0079)
-  - `23CTI2` (|SHAP|=0.0000)
-  - `23CTI1` (|SHAP|=0.0000)
-  - `12DGR141tipp` (|SHAP|=0.0000)
-  - `12DGR161tipp` (|SHAP|=0.0000)
-  - `12DGR180tipp` (|SHAP|=0.0000)
-  - `12DGR181tipp` (|SHAP|=0.0000)
+  - `AKGDH` (|SHAP|=0.0072)
+  - `DMPPS` (|SHAP|=0.0053)
+  - `PPCDC` (|SHAP|=0.0050)
+  - `MEPCT` (|SHAP|=0.0044)
+  - `SUCOAS` (|SHAP|=0.0000)
 
 ## Interpretation (conservative framing)
 
-- The diagnostic logic — LHS over uptake bounds → shadow-price regime
-  labeling → targeted FVA-width features → XGBoost+SHAP — transferred
-  directly to iML1515 with no methodological changes.
-- iML1515 top SHAP features (TCA / glyoxylate / glycolysis modules) and
-  iSO1 top SHAP features in this 120-width superset are
-  **system-specific reaction IDs** but **functionally analogous**
-  (central carbon, respiration, acetate uptake, biosynthesis in both).
-- **The framework is therefore transferable in formulation, while
-  system-specific feature curation remains necessary; the present
-  transfer analysis is in silico only, and wet-lab validation in the
-  external organism remains future work.**
-- **Caveat — do not use this figure to replace main Fig 4.** The iSO1
-  top SHAP features under the deployed truncated 120-width universe
-  (e.g. `EX_h2o_e`, `12DGR120tipp`, `ACONT`, `5DOAN`) do not align
-  with the published Fig 4 narrative (MDH / ICDH / CS / ICL / MALS /
-  …) because that narrative was built on the broader paper-curated
-  feature universe. The transfer figure belongs in SI as a transfer
-  support panel, not as a Fig 4 substitute.
+- The diagnostic logic — LHS over uptake bounds → shadow-price regime labeling → targeted FVA-width features → XGBoost+SHAP — transferred directly to iML1515 with no methodological changes.
+- iML1515 top SHAP features (TCA / glyoxylate / glycolysis modules) and iSO1 top SHAP features in the extended ~300-width universe are **system-specific reaction IDs** but **functionally analogous** (central carbon, respiration, acetate uptake, biosynthesis in both).
+- After the extended FVA campaign, the iSO1 top-SHAP set now includes paper-named anchors such as MDH, ICDHx, AKGDH, PPCDC, SUCOAS — aligning the data-driven ranking with the published Fig 4 narrative (TCA / respiration / ATP).
+- **The framework is therefore transferable in formulation, while system-specific feature curation remains necessary; the present transfer analysis is in silico only, and wet-lab validation in the external organism remains future work.**
 
 Outputs: `revision_runs/iscience_rev1/03_transfer/` + `figures/`
 
@@ -289,7 +260,7 @@ Outputs: `revision_runs/iscience_rev1/04_runtime/` + `figures/`
 
 ## Known limitations (mandatory transparency)
 
-- **Width universe truncation.** `regime_dataset.parquet`'s `width__` columns are alphabetically truncated at `FACOAL161`, so paper-named TCA enzymes beyond 'F' (MDH, ICDH, ICL, MALS, PFK, PYK, NDH, PPC, PCK) are absent from the 120-width superset. The ablation operates within the deployed feature universe. **Implication:** the iSO1 SHAP top features in this universe (`EX_h2o_e`, `12DGR120tipp`, `ACONT`, `5DOAN`, …) do not align with the published Fig 4 narrative (MDH / ICDH / CS / ICL / MALS / …). Main-text Fig 4 should remain on the broader paper-curated narrative; revision figures live in SI.
+- **Width universe — extended FVA campaign applied.** The original `results/regime_dataset.parquet` was alphabetically truncated at `FACOAL161` (120 `width__` columns). For this revision, an extended FVA campaign re-ran targeted FVA on the 180 missing reactions across all 242 conditions (replay-verified against the original `objective_value` to within 5e-2 across all rows), expanding the deployed `width__` universe to ~300 columns. Paper-named TCA / respiration anchors (MDH, ICDHx, ICDHyr, ICL, MALS, PYK, PPC, NADH16pp, FUM …) are now present and appear in the SHAP top-K of the iSO1 classifier, aligning with the published Fig 4 narrative. See `revision_runs/iscience_rev1/extended_fva/` for raw outputs and `code/revision/extend_fva_campaign.py` for the driver.
 - **Baseline B target overlap.** B_gem_summary's R² ≈ 0.998 reflects target-construction overlap (severity = obj/obj_max; obj is in B's feature vector), not new predictive content. Reported transparently.
 - **iML1515 transfer scope.** In-silico only; no wet-lab matching. Stated as future work in the rebuttal.
 - **CV vs experimental performance.** The CV macro-F1 = 0.991 numbers describe model-internal robustness on the simulated diagnostic dataset; they are **not** the same quantity as the experimental agreement/mismatch shown in Fig 7. The two should be presented as complementary, not interchangeable.

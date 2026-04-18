@@ -195,15 +195,18 @@ def main() -> None:
 
     md.append("## Known limitations (mandatory transparency)")
     md.append("")
-    md.append("- **Width universe truncation.** `regime_dataset.parquet`'s `width__` "
-              "columns are alphabetically truncated at `FACOAL161`, so paper-named TCA "
-              "enzymes beyond 'F' (MDH, ICDH, ICL, MALS, PFK, PYK, NDH, PPC, PCK) are "
-              "absent from the 120-width superset. The ablation operates within the "
-              "deployed feature universe. **Implication:** the iSO1 SHAP top features "
-              "in this universe (`EX_h2o_e`, `12DGR120tipp`, `ACONT`, `5DOAN`, …) do "
-              "not align with the published Fig 4 narrative (MDH / ICDH / CS / ICL / "
-              "MALS / …). Main-text Fig 4 should remain on the broader paper-curated "
-              "narrative; revision figures live in SI.")
+    md.append("- **Width universe — extended FVA campaign applied.** The original "
+              "`results/regime_dataset.parquet` was alphabetically truncated at "
+              "`FACOAL161` (120 `width__` columns). For this revision, an extended "
+              "FVA campaign re-ran targeted FVA on the 180 missing reactions across "
+              "all 242 conditions (replay-verified against the original "
+              "`objective_value` to within 5e-2 across all rows), expanding the "
+              "deployed `width__` universe to ~300 columns. Paper-named TCA / "
+              "respiration anchors (MDH, ICDHx, ICDHyr, ICL, MALS, PYK, PPC, "
+              "NADH16pp, FUM …) are now present and appear in the SHAP top-K of "
+              "the iSO1 classifier, aligning with the published Fig 4 narrative. "
+              "See `revision_runs/iscience_rev1/extended_fva/` for raw outputs and "
+              "`code/revision/extend_fva_campaign.py` for the driver.")
     md.append("- **Baseline B target overlap.** B_gem_summary's R² ≈ 0.998 reflects "
               "target-construction overlap (severity = obj/obj_max; obj is in B's "
               "feature vector), not new predictive content. Reported transparently.")

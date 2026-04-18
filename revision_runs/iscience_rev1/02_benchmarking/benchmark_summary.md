@@ -6,7 +6,7 @@
 
 - **A** Inputs only — uptake bounds (acetate, oxygen, ammonium, phosphate)
 - **B** GEM summary — biomass objective + uptake fluxes + sat-flag fluxes
-- **C** Curated widths — paper-aligned 31-reaction width__ panel (ours)
+- **C** Curated widths — paper-aligned 42-reaction width__ panel (ours)
 
 ## Headline numbers
 
@@ -18,29 +18,14 @@
    B_gem_summary           9       LogReg    0.9341             0.9476                   0.9524                    0.8571                    0.9929   ElasticNet 0.00529 0.00383 0.9977
    B_gem_summary           9 RandomForest    0.9492             0.9492                   0.9524                    0.9000                    0.9953 RandomForest 0.02991 0.00253 0.9263
    B_gem_summary           9      XGBoost    0.9492             0.9492                   0.9524                    0.9000                    0.9953      XGBoost 0.02990 0.00258 0.9264
-C_curated_widths          31       LogReg    0.9760             0.9841                   0.9756                    0.9524                    1.0000   ElasticNet 0.00515 0.00350 0.9978
-C_curated_widths          31 RandomForest    1.0000             1.0000                   1.0000                    1.0000                    1.0000 RandomForest 0.03113 0.00260 0.9202
-C_curated_widths          31      XGBoost    0.9565             0.9349                   0.9268                    0.9474                    0.9953      XGBoost 0.03085 0.00319 0.9216
+C_curated_widths          42       LogReg    0.9760             0.9841                   0.9756                    0.9524                    1.0000   ElasticNet 0.00517 0.00352 0.9978
+C_curated_widths          42 RandomForest    1.0000             1.0000                   1.0000                    1.0000                    1.0000 RandomForest 0.03155 0.00265 0.9180
+C_curated_widths          42      XGBoost    0.9565             0.9349                   0.9268                    0.9474                    0.9953      XGBoost 0.03085 0.00319 0.9216
 ```
 
 ## Interpretation (conservative framing)
 
-- Inputs-only baselines establish a floor on severity regression
-  (R² ≤ 0.86) but reach competitive macro-F1 on classification
-  (RandomForest / XGBoost 0.958), reflecting the strong O2_limited
-  majority class.
-- GEM-summary baselines achieve high R² (≥ 0.93). **Caveat:** the FBA
-  objective is in this feature vector by construction (severity =
-  obj/obj_max), so its R² ≈ 0.998 reflects target-construction overlap,
-  not new predictive content.
-- On the same curated 31-reaction width panel, all three learners
-  perform competitively (macro-F1 0.957–1.000; RMSE 0.005–0.031). The
-  diagnostic signal is therefore carried primarily by the
-  **flexibility-based representation**, not by a uniquely optimal
-  learner. Random forest reached macro-F1 = 1.000 on this small dataset
-  but lacks SHAP-equivalent interpretability of the same form; XGBoost
-  is used as the consistent explainable learner.
-- **Headline message:** the revision's claim is *not* that XGBoost is
-  uniquely optimal. The claim is that flexibility-based features carry
-  meaningful diagnostic signal and support an interpretable diagnostic
-  workflow across model classes.
+- Inputs-only baselines establish a floor on severity regression (R² ≤ 0.86) but reach competitive macro-F1 on classification (RandomForest / XGBoost ≈ 0.96), reflecting the strong O2_limited majority class.
+- GEM-summary baselines achieve high R² (≥ 0.93). **Caveat:** the FBA objective is in this feature vector by construction (severity = obj/obj_max), so its R² ≈ 0.998 reflects target-construction overlap, not new predictive content.
+- On the same curated width panel, all three learners perform competitively (macro-F1 0.957–1.000; RMSE 0.005–0.031). The diagnostic signal is therefore carried primarily by the **flexibility-based representation**, not by a uniquely optimal learner. Random forest reached macro-F1 = 1.000 on this small dataset but lacks SHAP-equivalent interpretability of the same form; XGBoost is used as the consistent explainable learner.
+- **Headline message:** the revision's claim is *not* that XGBoost is uniquely optimal. The claim is that flexibility-based features carry meaningful diagnostic signal and support an interpretable diagnostic workflow across model classes.
