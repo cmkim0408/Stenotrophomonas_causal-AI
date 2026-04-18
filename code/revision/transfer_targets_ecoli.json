@@ -1,0 +1,22 @@
+{
+  "comment": "Curated reaction panel for iML1515 (E. coli) transfer demo. Mirrors paper's TCA / glyoxylate / respiration / acetate-uptake / biosynthesis modules.",
+  "exchanges_uptake": [
+    "EX_glc__D_e", "EX_ac_e", "EX_o2_e", "EX_nh4_e", "EX_pi_e", "EX_co2_e", "EX_h2o_e", "EX_h_e"
+  ],
+  "tca_glyoxylate": [
+    "CS", "ACONTa", "ACONTb", "ICDHyr", "AKGDH", "SUCDi", "SUCOAS", "FUM", "MDH", "ICL", "MALS"
+  ],
+  "glycolysis_anaplerotic": [
+    "PFK", "FBA", "TPI", "GAPD", "PGK", "PGM", "ENO", "PYK",
+    "PPC", "PPCK", "ME1", "ME2"
+  ],
+  "respiration_atp": [
+    "NADH16pp", "ATPS4rpp", "CYTBO3_4pp", "CYTBDpp", "ATPM", "THD2pp"
+  ],
+  "acetate_uptake": [
+    "ACS", "ACKr", "PTAr", "ACt2rpp", "ACtex"
+  ],
+  "n_biosynthesis": [
+    "GLUDy", "GLNS", "GLUSy"
+  ]
+}

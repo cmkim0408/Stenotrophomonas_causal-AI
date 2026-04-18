@@ -1,0 +1,17 @@
+# Environment summary
+
+python: 3.12.11
+platform: Windows-10-10.0.19045-SP0
+machine: AMD64
+cpu_count: 16
+pkg.numpy: 2.3.2
+pkg.pandas: 2.3.3
+pkg.scipy: 1.17.1
+pkg.scikit-learn: 1.8.0
+pkg.xgboost: 3.1.3
+pkg.shap: 0.49.1
+pkg.cobra: 0.31.1
+pkg.causal-learn: 0.1.4.5
+pkg.matplotlib: 3.10.6
+pkg.pyarrow: 22.0.0
+pkg.numba: 0.63.1

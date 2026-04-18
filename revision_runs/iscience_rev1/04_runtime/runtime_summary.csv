@@ -1,0 +1,7 @@
+stage,n,wall_seconds,peak_rss_mb,n_targets,n_features,train_seconds,shap_seconds
+lhs_sample,500,0.0003,145.8,,,,
+fba_batch,50,2.0686,281.2,,,,
+targeted_fva,10,0.4246,289.4,30.0,,,
+classifier+shap,242,0.2854,400.9,,120.0,0.2723,0.0131
+regressor+shap,242,0.0598,402.3,,120.0,0.0542,0.0055
+pc_bootstrap,25,0.3154,417.0,,,,
