@@ -1,17 +1,34 @@
 # iScience revision — REPORT
 
 **Branch:** `revision/iscience-rev1`
-**Date:** 2026-04-18
+**Date:** 2026-04-18 (conservative-framing pass)
+
+> **Strategic framing.** The revision's claim is **not** that XGBoost is
+> uniquely optimal. The claim is that **flexibility-based features carry**
+> **meaningful diagnostic signal and support an interpretable diagnostic**
+> **workflow across model classes** — XGBoost is the consistent
+> explainable learner used to expose that signal.
 
 ## At-a-glance
 
 | Workstream | Key result |
 |---|---|
-| #1 Feature ablation | curated_paper (n=31): F1=0.9565, R²=0.9216; all_widths (120): F1=0.9911, R²=0.9062; random_30 envelope ≈ same |
-| #2 Benchmark | curated+XGBoost F1=0.9565, R²=0.9216; best inputs-only F1=0.9581 |
-| #3 Existing-data | 5-fold CV macro-F1=0.9911, severity R²=0.9062 |
-| #4 iML1515 transfer | macro-F1=0.9718, R²=0.9778 on 244 LHS conditions |
-| #5 Runtime | total stages = 3.2 s on a single core |
+| #1 Feature ablation | curated_paper (n=31): F1=0.9565, R²=0.9216; all_widths (120): F1=0.9911, R²=0.9062; random_30 envelope ≈ same. **Curated 30 = interpretability layer, not performance optimum.** |
+| #2 Benchmark | curated+XGBoost F1=0.9565, curated+RF F1=1.0000, best inputs-only F1=0.9581. **Signal is in the flexibility representation, not the learner.** |
+| #3 Existing-data | 5-fold CV macro-F1=0.9911, severity R²=0.9062 (model-internal robustness; distinct from Fig 7 experimental story) |
+| #4 iML1515 transfer | macro-F1=0.9718, R²=0.9778 on 244 LHS conditions (in silico only; SI figure, not main Fig 4 substitute) |
+| #5 Runtime | total stages = 3.2 s on a single core, <420 MB peak RSS |
+
+## Placement strategy (main vs SI)
+
+| Asset | Recommended placement |
+|---|---|
+| Short benchmark / existing-data / transfer / runtime paragraphs | Main text |
+| All revision figures (ablation, benchmark, confusion, residuals, transfer) | **SI** |
+| Runtime summary table | **SI** |
+
+Rationale: keep the main narrative anchored on the curated Fig 4 / Fig 7
+story; use SI to supply quantitative reviewer-driven justification.
 
 ## 1. Feature panel ablation
 
@@ -20,6 +37,16 @@
 - N conditions: 242  ·  classes: ['N_limited', 'Ac_limited', 'O2_limited']
 - Universe: 120 `width__` columns (parquet alphabetically truncated at 'FACOAL161'; M/I/N-prefixed paper anchors absent)
 - Random-30 controls: 10 seeds
+
+## Conservative interpretation
+
+The curated 30/31-feature panel should be interpreted as an
+**interpretability-oriented diagnostic layer rather than a
+performance-optimal subset**. Within the deployed 120-`width__` universe,
+performance is largely insensitive to panel size (Δmacro-F1 ≤ 0.04 across
+panels of size 10–120; random 30-feature controls match curated).
+Reviewer 2's "why 30?" question is therefore answered on grounds of
+mechanistic interpretability, not predictive optimality.
 
 ## Headline numbers
 
@@ -102,11 +129,27 @@ C_curated_widths          31 RandomForest    1.0000             1.0000          
 C_curated_widths          31      XGBoost    0.9565             0.9349                   0.9268                    0.9474                    0.9953      XGBoost 0.03085 0.00319 0.9216
 ```
 
-## Interpretation
+## Interpretation (conservative framing)
 
-- Inputs-only baselines establish a floor: they capture the obvious regime split (high O2 vs low O2) but cannot resolve nutrient-limited vs O2-limited conditions when uptake bounds overlap.
-- GEM summary baselines add the FBA solution + saturation flags. These already contain most of the regime-discriminating signal (by construction of the regime label).
-- Curated widths + XGBoost (ours) achieves comparable or slightly better classification AND retains a flexibility-collapse interpretation for severity regression — see `01_feature_panel_ablation/`.
+- Inputs-only baselines establish a floor on severity regression
+  (R² ≤ 0.86) but reach competitive macro-F1 on classification
+  (RandomForest / XGBoost 0.958), reflecting the strong O2_limited
+  majority class.
+- GEM-summary baselines achieve high R² (≥ 0.93). **Caveat:** the FBA
+  objective is in this feature vector by construction (severity =
+  obj/obj_max), so its R² ≈ 0.998 reflects target-construction overlap,
+  not new predictive content.
+- On the same curated 31-reaction width panel, all three learners
+  perform competitively (macro-F1 0.957–1.000; RMSE 0.005–0.031). The
+  diagnostic signal is therefore carried primarily by the
+  **flexibility-based representation**, not by a uniquely optimal
+  learner. Random forest reached macro-F1 = 1.000 on this small dataset
+  but lacks SHAP-equivalent interpretability of the same form; XGBoost
+  is used as the consistent explainable learner.
+- **Headline message:** the revision's claim is *not* that XGBoost is
+  uniquely optimal. The claim is that flexibility-based features carry
+  meaningful diagnostic signal and support an interpretable diagnostic
+  workflow across model classes.
 
 Outputs: `revision_runs/iscience_rev1/02_benchmarking/` + `figures/`
 
@@ -132,6 +175,18 @@ Outputs: `revision_runs/iscience_rev1/02_benchmarking/` + `figures/`
 ## Top mismatch (holdout C1..C10)
 
 See `top_mismatch_conditions.csv` (sorted by rank residual).
+
+## Scope note (must be preserved when quoting these numbers)
+
+These metrics describe **model-internal cross-validation robustness on
+the simulated diagnostic dataset** (n=242 LHS conditions). They are
+**distinct** from the experimental agreement/mismatch story shown in
+Fig 7. The two should be reported as complementary:
+
+- **Fig 7** = experimental Δ(model − measurement) and mismatch
+  interpretation (n=10 C-series + n=10 N-series),
+- **This file** = CV macro-F1 / per-class metrics / residual summary on
+  the 5-fold split of the simulated diagnostic dataset.
 
 Outputs: `revision_runs/iscience_rev1/05_existing_data/` + `figures/`
 
@@ -191,12 +246,26 @@ Outputs: `revision_runs/iscience_rev1/05_existing_data/` + `figures/`
   - `12DGR180tipp` (|SHAP|=0.0000)
   - `12DGR181tipp` (|SHAP|=0.0000)
 
-## Interpretation
+## Interpretation (conservative framing)
 
-- The diagnostic logic — LHS over uptake bounds → shadow-price regime labeling → targeted FVA-width features → XGBoost+SHAP — transferred directly to iML1515 with no methodological changes.
-- The top SHAP features are *system-specific* (different reaction IDs) but functionally analogous (central carbon, respiration, acetate uptake, and biosynthesis modules in both systems).
-- The framework is transferable in formulation; system-specific feature tuning (curated panel selection) remains necessary.
-- Real wet-lab validation in E. coli is out of scope for this demo and is flagged as future work.
+- The diagnostic logic — LHS over uptake bounds → shadow-price regime
+  labeling → targeted FVA-width features → XGBoost+SHAP — transferred
+  directly to iML1515 with no methodological changes.
+- iML1515 top SHAP features (TCA / glyoxylate / glycolysis modules) and
+  iSO1 top SHAP features in this 120-width superset are
+  **system-specific reaction IDs** but **functionally analogous**
+  (central carbon, respiration, acetate uptake, biosynthesis in both).
+- **The framework is therefore transferable in formulation, while
+  system-specific feature curation remains necessary; the present
+  transfer analysis is in silico only, and wet-lab validation in the
+  external organism remains future work.**
+- **Caveat — do not use this figure to replace main Fig 4.** The iSO1
+  top SHAP features under the deployed truncated 120-width universe
+  (e.g. `EX_h2o_e`, `12DGR120tipp`, `ACONT`, `5DOAN`) do not align
+  with the published Fig 4 narrative (MDH / ICDH / CS / ICL / MALS /
+  …) because that narrative was built on the broader paper-curated
+  feature universe. The transfer figure belongs in SI as a transfer
+  support panel, not as a Fig 4 substitute.
 
 Outputs: `revision_runs/iscience_rev1/03_transfer/` + `figures/`
 
@@ -218,9 +287,10 @@ Outputs: `revision_runs/iscience_rev1/03_transfer/` + `figures/`
 
 Outputs: `revision_runs/iscience_rev1/04_runtime/` + `figures/`
 
-## Known limitations
+## Known limitations (mandatory transparency)
 
-- `regime_dataset.parquet` width__ universe is alphabetically truncated at `FACOAL161`, so paper-named TCA enzymes beyond 'F' (MDH, ICDH, ICL, MALS, PFK, PYK, NDH, PPC, PCK) are absent. The ablation thus operates within the 120-width superset that the deployed model actually uses; results still answer Reviewer 2 (panel-size robustness) but qualitative cross-feature comparisons against paper Fig 4 should be qualified.
-- The B_gem_summary baseline includes `objective_value`, which is the numerator of the severity target G = obj/obj_max — its R²≈0.998 reflects construction overlap, not new predictive power.
-- iML1515 transfer is in-silico only; experimental matching deferred.
+- **Width universe truncation.** `regime_dataset.parquet`'s `width__` columns are alphabetically truncated at `FACOAL161`, so paper-named TCA enzymes beyond 'F' (MDH, ICDH, ICL, MALS, PFK, PYK, NDH, PPC, PCK) are absent from the 120-width superset. The ablation operates within the deployed feature universe. **Implication:** the iSO1 SHAP top features in this universe (`EX_h2o_e`, `12DGR120tipp`, `ACONT`, `5DOAN`, …) do not align with the published Fig 4 narrative (MDH / ICDH / CS / ICL / MALS / …). Main-text Fig 4 should remain on the broader paper-curated narrative; revision figures live in SI.
+- **Baseline B target overlap.** B_gem_summary's R² ≈ 0.998 reflects target-construction overlap (severity = obj/obj_max; obj is in B's feature vector), not new predictive content. Reported transparently.
+- **iML1515 transfer scope.** In-silico only; no wet-lab matching. Stated as future work in the rebuttal.
+- **CV vs experimental performance.** The CV macro-F1 = 0.991 numbers describe model-internal robustness on the simulated diagnostic dataset; they are **not** the same quantity as the experimental agreement/mismatch shown in Fig 7. The two should be presented as complementary, not interchangeable.
 

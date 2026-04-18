@@ -52,9 +52,23 @@
   - `12DGR180tipp` (|SHAP|=0.0000)
   - `12DGR181tipp` (|SHAP|=0.0000)
 
-## Interpretation
+## Interpretation (conservative framing)
 
-- The diagnostic logic — LHS over uptake bounds → shadow-price regime labeling → targeted FVA-width features → XGBoost+SHAP — transferred directly to iML1515 with no methodological changes.
-- The top SHAP features are *system-specific* (different reaction IDs) but functionally analogous (central carbon, respiration, acetate uptake, and biosynthesis modules in both systems).
-- The framework is transferable in formulation; system-specific feature tuning (curated panel selection) remains necessary.
-- Real wet-lab validation in E. coli is out of scope for this demo and is flagged as future work.
+- The diagnostic logic — LHS over uptake bounds → shadow-price regime
+  labeling → targeted FVA-width features → XGBoost+SHAP — transferred
+  directly to iML1515 with no methodological changes.
+- iML1515 top SHAP features (TCA / glyoxylate / glycolysis modules) and
+  iSO1 top SHAP features in this 120-width superset are
+  **system-specific reaction IDs** but **functionally analogous**
+  (central carbon, respiration, acetate uptake, biosynthesis in both).
+- **The framework is therefore transferable in formulation, while
+  system-specific feature curation remains necessary; the present
+  transfer analysis is in silico only, and wet-lab validation in the
+  external organism remains future work.**
+- **Caveat — do not use this figure to replace main Fig 4.** The iSO1
+  top SHAP features under the deployed truncated 120-width universe
+  (e.g. `EX_h2o_e`, `12DGR120tipp`, `ACONT`, `5DOAN`) do not align
+  with the published Fig 4 narrative (MDH / ICDH / CS / ICL / MALS /
+  …) because that narrative was built on the broader paper-curated
+  feature universe. The transfer figure belongs in SI as a transfer
+  support panel, not as a Fig 4 substitute.

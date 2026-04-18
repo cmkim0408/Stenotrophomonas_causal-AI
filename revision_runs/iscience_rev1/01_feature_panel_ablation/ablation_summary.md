@@ -4,6 +4,16 @@
 - Universe: 120 `width__` columns (parquet alphabetically truncated at 'FACOAL161'; M/I/N-prefixed paper anchors absent)
 - Random-30 controls: 10 seeds
 
+## Conservative interpretation
+
+The curated 30/31-feature panel should be interpreted as an
+**interpretability-oriented diagnostic layer rather than a
+performance-optimal subset**. Within the deployed 120-`width__` universe,
+performance is largely insensitive to panel size (Δmacro-F1 ≤ 0.04 across
+panels of size 10–120; random 30-feature controls match curated).
+Reviewer 2's "why 30?" question is therefore answered on grounds of
+mechanistic interpretability, not predictive optimality.
+
 ## Headline numbers
 
 ```

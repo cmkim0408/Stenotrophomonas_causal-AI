@@ -121,7 +121,13 @@ def main() -> None:
     md.append("# iScience revision — REPORT")
     md.append("")
     md.append("**Branch:** `revision/iscience-rev1`")
-    md.append("**Date:** 2026-04-18")
+    md.append("**Date:** 2026-04-18 (conservative-framing pass)")
+    md.append("")
+    md.append("> **Strategic framing.** The revision's claim is **not** that XGBoost is")
+    md.append("> uniquely optimal. The claim is that **flexibility-based features carry**")
+    md.append("> **meaningful diagnostic signal and support an interpretable diagnostic**")
+    md.append("> **workflow across model classes** — XGBoost is the consistent")
+    md.append("> explainable learner used to expose that signal.")
     md.append("")
     md.append("## At-a-glance")
     md.append("")
@@ -132,24 +138,41 @@ def main() -> None:
         all_w = abl[abl["panel"] == "all_widths"].iloc[0]
         md.append(f"| #1 Feature ablation | curated_paper (n={int(cur['n_features'])}): "
                   f"F1={cur['macro_f1']:.4f}, R²={cur['r2']:.4f}; all_widths (120): "
-                  f"F1={all_w['macro_f1']:.4f}, R²={all_w['r2']:.4f}; random_30 envelope ≈ same |")
+                  f"F1={all_w['macro_f1']:.4f}, R²={all_w['r2']:.4f}; random_30 envelope ≈ same. "
+                  f"**Curated 30 = interpretability layer, not performance optimum.** |")
     if bench is not None:
         ours = bench[(bench["feature_set"] == "C_curated_widths") & (bench["clf_model"] == "XGBoost")].iloc[0]
+        rf = bench[(bench["feature_set"] == "C_curated_widths") & (bench["clf_model"] == "RandomForest")].iloc[0]
         a = bench[bench["feature_set"] == "A_inputs_only"]["macro_f1"].max()
-        md.append(f"| #2 Benchmark | curated+XGBoost F1={ours['macro_f1']:.4f}, R²={ours['r2']:.4f}; "
-                  f"best inputs-only F1={a:.4f} |")
+        md.append(f"| #2 Benchmark | curated+XGBoost F1={ours['macro_f1']:.4f}, "
+                  f"curated+RF F1={rf['macro_f1']:.4f}, best inputs-only F1={a:.4f}. "
+                  f"**Signal is in the flexibility representation, not the learner.** |")
     if perf is not None and res is not None:
         macro = perf[perf["class"] == "macro_avg"].iloc[0]
         d = dict(zip(res["metric"], res["value"]))
         md.append(f"| #3 Existing-data | 5-fold CV macro-F1={macro['f1']:.4f}, "
-                  f"severity R²={d.get('r2', 0):.4f} |")
+                  f"severity R²={d.get('r2', 0):.4f} (model-internal robustness; "
+                  f"distinct from Fig 7 experimental story) |")
     if transfer is not None:
         e = transfer[transfer["system"] == "iML1515"].iloc[0]
         md.append(f"| #4 iML1515 transfer | macro-F1={e['macro_f1']:.4f}, "
-                  f"R²={e['r2_severity']:.4f} on {e['n_conditions']} LHS conditions |")
+                  f"R²={e['r2_severity']:.4f} on {e['n_conditions']} LHS conditions "
+                  f"(in silico only; SI figure, not main Fig 4 substitute) |")
     if runtime is not None:
         total = runtime["wall_seconds"].sum()
-        md.append(f"| #5 Runtime | total stages = {total:.1f} s on a single core |")
+        md.append(f"| #5 Runtime | total stages = {total:.1f} s on a single core, "
+                  f"<420 MB peak RSS |")
+    md.append("")
+    md.append("## Placement strategy (main vs SI)")
+    md.append("")
+    md.append("| Asset | Recommended placement |")
+    md.append("|---|---|")
+    md.append("| Short benchmark / existing-data / transfer / runtime paragraphs | Main text |")
+    md.append("| All revision figures (ablation, benchmark, confusion, residuals, transfer) | **SI** |")
+    md.append("| Runtime summary table | **SI** |")
+    md.append("")
+    md.append("Rationale: keep the main narrative anchored on the curated Fig 4 / Fig 7")
+    md.append("story; use SI to supply quantitative reviewer-driven justification.")
     md.append("")
 
     # Per-workstream sections — pull each summary.md as-is
@@ -170,18 +193,27 @@ def main() -> None:
         md.append(f"Outputs: `revision_runs/iscience_rev1/{sub}/` + `figures/`")
         md.append("")
 
-    md.append("## Known limitations")
+    md.append("## Known limitations (mandatory transparency)")
     md.append("")
-    md.append("- `regime_dataset.parquet` width__ universe is alphabetically truncated at "
-              "`FACOAL161`, so paper-named TCA enzymes beyond 'F' (MDH, ICDH, ICL, MALS, "
-              "PFK, PYK, NDH, PPC, PCK) are absent. The ablation thus operates within "
-              "the 120-width superset that the deployed model actually uses; results "
-              "still answer Reviewer 2 (panel-size robustness) but qualitative cross-"
-              "feature comparisons against paper Fig 4 should be qualified.")
-    md.append("- The B_gem_summary baseline includes `objective_value`, which is the "
-              "numerator of the severity target G = obj/obj_max — its R²≈0.998 reflects "
-              "construction overlap, not new predictive power.")
-    md.append("- iML1515 transfer is in-silico only; experimental matching deferred.")
+    md.append("- **Width universe truncation.** `regime_dataset.parquet`'s `width__` "
+              "columns are alphabetically truncated at `FACOAL161`, so paper-named TCA "
+              "enzymes beyond 'F' (MDH, ICDH, ICL, MALS, PFK, PYK, NDH, PPC, PCK) are "
+              "absent from the 120-width superset. The ablation operates within the "
+              "deployed feature universe. **Implication:** the iSO1 SHAP top features "
+              "in this universe (`EX_h2o_e`, `12DGR120tipp`, `ACONT`, `5DOAN`, …) do "
+              "not align with the published Fig 4 narrative (MDH / ICDH / CS / ICL / "
+              "MALS / …). Main-text Fig 4 should remain on the broader paper-curated "
+              "narrative; revision figures live in SI.")
+    md.append("- **Baseline B target overlap.** B_gem_summary's R² ≈ 0.998 reflects "
+              "target-construction overlap (severity = obj/obj_max; obj is in B's "
+              "feature vector), not new predictive content. Reported transparently.")
+    md.append("- **iML1515 transfer scope.** In-silico only; no wet-lab matching. "
+              "Stated as future work in the rebuttal.")
+    md.append("- **CV vs experimental performance.** The CV macro-F1 = 0.991 numbers "
+              "describe model-internal robustness on the simulated diagnostic dataset; "
+              "they are **not** the same quantity as the experimental "
+              "agreement/mismatch shown in Fig 7. The two should be presented as "
+              "complementary, not interchangeable.")
     md.append("")
 
     (OUT / "REPORT.md").write_text("\n".join(md) + "\n", encoding="utf-8")
