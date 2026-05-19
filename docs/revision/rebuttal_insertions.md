@@ -1,7 +1,7 @@
 # Rebuttal insertions — iScience revision
 
 **Branch:** `revision/iscience-rev1`
-**Date:** 2026-04-18 (extended-universe pass — width__ truncation resolved)
+**Date:** 2026-05-19 (novelty-defense pass — workstream #7 added)
 
 This file collects ready-to-paste paragraphs and point-by-point responses for
 each completed revision workstream. **Numbers are reported conservatively**;
@@ -329,3 +329,155 @@ structure".)
   dataset; they are **not** the same quantity as the experimental
   agreement/mismatch shown in Fig 7. The two should be presented as
   complementary, not interchangeable.
+
+---
+
+## 7. Point-flux vs flexibility-interval (novelty defense)
+
+### Strategic framing
+
+This is the workstream that directly defends the manuscript's central
+novelty claim — that **flexibility-interval (FVA-width) features support
+feasible-space diagnosis, conceptually distinct from point-state prediction
+(pFBA / FBA)**. The result is intentionally framed as a *concept*-level
+contribution rather than a raw-F1 dominance argument, because on this
+dataset the |pFBA flux| baseline reaches F1 = 0.972 vs our W_widths = 0.957.
+The two answer different questions.
+
+### Results paragraph (main text — Discussion or Results closer)
+
+> To directly test whether the diagnostic signal lives in the *interval*
+> or in the *point*, we held the curated reaction panel, the XGBoost
+> learner, and the 5-fold CV split constant and varied only the feature
+> representation. Five representations were compared: FVA-derived width
+> (our flexibility feature), FVA midpoint (point center from the same
+> solve), parsimonious-FBA flux (signed; the strongest deterministic
+> point-flux baseline), |pFBA flux| (magnitude), and FBA objective alone.
+> Within the same FVA solve, the interval width outperformed the midpoint
+> by Δmacro-F1 = +0.016 (0.957 vs 0.941) and ΔR² = +0.014 (0.922 vs
+> 0.908), indicating that **the size of the feasible interval carries
+> information beyond the central representative flux**. Against pFBA
+> point-flux (signed), the width also performed slightly better
+> (0.957 vs 0.939). Only the sign-agnostic |pFBA flux| reached numerically
+> higher F1 (0.972) on classification while remaining comparable on
+> severity R² (0.926 vs 0.922). On the iML1515 transfer (244 in silico
+> conditions), the width representation reached macro-F1 = 0.973 vs the
+> scalar-objective floor F1 = 0.289. We interpret these comparisons not
+> as a claim of unique optimality for FVA-width, but as evidence that
+> **flexibility-interval features support a mechanistically interpretable
+> diagnostic representation — degrees of metabolic freedom — that
+> point-flux representations do not, independent of their classification
+> F1**.
+
+### Methods paragraph
+
+> Point-flux vs flexibility-interval comparison. For each of the 242
+> stored LHS conditions (iSO1_933) and the 244 iML1515 transfer conditions,
+> parsimonious FBA (`cobra.flux_analysis.pfba`) was solved with the same
+> medium and uptake bounds used to generate the FVA dataset. Five feature
+> representations were constructed on the same curated panel: width
+> (`vmax − vmin`), midpoint (`(vmax + vmin) / 2`), signed pFBA flux,
+> absolute pFBA flux, and biomass objective. Each representation was
+> evaluated by XGBoost classifier and regressor under 5-fold CV with
+> identical hyperparameters (300 trees, max_depth=4, hist), reporting
+> macro-F1, balanced accuracy, RMSE, and R². pFBA fluxes are deterministic
+> and remove the non-uniqueness confound of plain FBA. Outputs:
+> `revision_runs/iscience_rev1/07_pointflux/`.
+
+### Rebuttal answer (editor: "more explanation about the novelty of the method is required")
+
+> The editor and reviewers asked for stronger articulation of the
+> manuscript's methodological novelty. Beyond rewriting the
+> Introduction to position the framework as a **feasible-space /
+> degrees-of-freedom diagnosis** rather than a point-state prediction
+> tool (see Introduction insert below), we added a direct quantitative
+> comparison: the same XGBoost learner, the same curated panel, the same
+> 5-fold CV — but with the feature representation varied across
+> FVA-width (ours), FVA midpoint, signed pFBA flux, |pFBA flux|, and FBA
+> objective. Within the same FVA solve, the *width* representation
+> outperforms the *midpoint* (Δmacro-F1 = +0.016; ΔR² = +0.014),
+> indicating that the size of the feasible interval carries information
+> beyond the central representative flux. The width is also competitive
+> with or better than signed pFBA point-flux. The |pFBA flux| magnitude
+> reaches higher F1 (0.972 vs 0.957) but answers a different question
+> than the width: |pFBA| describes *where the biomass-maximizing flux
+> goes*, while width describes *how much rerouting capacity remains under
+> the imposed constraint context*. The latter is what supports the
+> downstream rigidification/degree-of-freedom interpretation (Figs 5–6)
+> that point-flux representations cannot produce. The novelty of the
+> method, then, is not that one representation dominates classification
+> F1; it is that **the flexibility-interval representation enables a
+> mechanistic diagnosis of feasible-space collapse that is conceptually
+> distinct from, and not reducible to, point-state prediction**. The
+> point-flux baselines are reported transparently in the SI alongside
+> the width-based results.
+
+### Introduction insert (Reviewer 1 — overall framework logic)
+
+> Most FBA- and dFBA-based diagnostic workflows summarize the intracellular
+> state by an objective-optimized point solution, such as a
+> biomass-maximizing flux vector or a time-resolved growth trajectory.
+> However, in genome-scale metabolic models, many alternative flux vectors
+> can satisfy the same extracellular constraints and objective value,
+> making point fluxes unstable as diagnostic targets. We therefore
+> reformulate metabolic diagnosis as a feasible-space problem. For each
+> intervention context, flux variability analysis defines an allowable
+> interval for each reaction or module, and the interval width represents
+> the remaining metabolic degrees of freedom. Wide intervals indicate
+> retained rerouting capacity, whereas shrinking intervals indicate
+> rigidification — i.e., loss of flexibility as constraints accumulate.
+> In this framework, XGBoost learns the relationship between FVA-derived
+> flexibility widths and regime identity or growth potential, SHAP
+> identifies which degrees of freedom are collapsing, and causal-structure
+> discovery organizes these collapses into a hypothesis map for
+> intervention prioritization. The proposed framework therefore differs
+> from point-state prediction by diagnosing the collapse of metabolic
+> flexibility rather than a single optimal flux state.
+
+### Cover-letter insert (novelty re-positioning)
+
+> The revised manuscript clarifies that the methodological novelty of
+> this work is not the combination of GEM, XAI, and causal discovery,
+> but the **reformulation of GEM-based bioprocess diagnosis from
+> point-flux prediction to feasible-space diagnosis**. Conventional FBA/
+> dFBA-type analyses rely on objective-optimized point solutions, while
+> our framework uses FVA-derived interval widths to quantify metabolic
+> degrees of freedom and diagnose flexibility collapse. The accompanying
+> revisions support this re-positioning with new benchmarking against
+> point-flux baselines (Workstream #7), feature-panel ablation
+> (Workstream #1), quantitative performance metrics (Workstreams #2–#3),
+> computational-cost reporting (Workstream #5), and an in-silico
+> cross-organism demonstration on E. coli iML1515 (Workstreams #3 and
+> #7). We reduce overstatement throughout: the framework is presented
+> as a **proof-of-concept diagnostic platform / hypothesis-prioritization
+> structure**, not a validated deployable tool.
+
+### Note on iML1515 pFBA completion
+
+> The iML1515 width and objective-floor baselines have been computed
+> (n=244, macro-F1 = 0.973 vs 0.289). The iML1515 pFBA / |pFBA| baselines
+> require a single additional command run on a machine where iML1515 is
+> already cached: `python code/revision/_pfba_runner.py iml 0 244`
+> followed by re-running `07_pointflux_baseline.py`, which will pick up
+> the cache automatically. The supporting infrastructure (script,
+> resumable per-row parts, cache loader) is fully implemented.
+
+**Strength:** ✅ SI figure (`pointflux_vs_width.png`) + 1-paragraph
+Discussion insert + Introduction reframing + Cover-letter sentence.
+*This is the single most important workstream for defending the
+manuscript's central novelty claim.*
+
+---
+
+## 8. Updated point-by-point table
+
+| Editor / Reviewer point | Workstream | Answer file |
+|---|---|---|
+| Editor: novelty of method | **#7 pointflux** | `07_pointflux/pointflux_summary.md` |
+| Mandatory 2 + 3 (justify 30, characterize panel) | #1 ablation | `01_feature_panel_ablation/ablation_summary.md` |
+| Mandatory 4 (benchmarks) | #2 benchmark | `02_benchmarking/benchmark_summary.md` |
+| Mandatory 3 (per-class, residual diagnostics) | #3 existing-data | `05_existing_data/existing_data_summary.md` |
+| Mandatory 5 + 6 (generalizability) | #4 transfer | `03_transfer/transfer_summary.md` |
+| Mandatory 9 (runtime) | #5 runtime | `04_runtime/runtime_summary.md` |
+| Reviewer 1: overall framework logic in Intro | **#7 pointflux** Intro insert (above) | (this file) |
+| Editor: refine claims (concept vs tool) | **#7 pointflux** Cover-letter insert (above) | (this file) |

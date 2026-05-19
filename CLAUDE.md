@@ -38,11 +38,16 @@ The goal is to run computational analyses required for revision, not to rewrite 
 
 # Required analyses (priority order)
 
-1. **Feature panel ablation / expansion** — answers Reviewer 2 "왜 30개?" (mandatory 2 + 3)
-2. **Benchmarking against baselines** — answers editor + Reviewer (mandatory 4 + 3)
-3. **Existing-data performance summaries** — confusion matrix, residuals, mismatch table (mandatory 3 supplement)
-4. **External transfer / generalizability** — iML1515 in silico (mandatory 5 + 6)
-5. **Runtime / scalability profiling** — wall-clock + env capture (mandatory 9)
+1. **Feature panel ablation / expansion** — answers Reviewer 2 "왜 30개?" (mandatory 2 + 3)  ✅ done
+2. **Benchmarking against baselines** — answers editor + Reviewer (mandatory 4 + 3)  ✅ done
+3. **Existing-data performance summaries** — confusion matrix, residuals, mismatch table (mandatory 3 supplement)  ✅ done
+4. **External transfer / generalizability** — iML1515 in silico (mandatory 5 + 6)  ✅ done
+5. **Runtime / scalability profiling** — wall-clock + env capture (mandatory 9)  ✅ done
+6. **Point-flux vs flexibility-interval (novelty defense)** — answers editor "more explanation about novelty" (CRITICAL)  🟡 iSO1 done; iML1515 pFBA pending one Windows-side run
+7. **Conceptual Table 1 / Fig 1A** (page-1 framework visualization)  ⏳ pending
+8. **Fig 5 non-linearity reanalysis** (Reviewer 2)  ⏳ pending
+9. **Fig 6 arrow consistency** (Reviewer 2)  ⏳ pending
+10. **Point-by-point response letter** (.docx)  ⏳ pending
 
 # Deliverables (each must exist before Plan-B is reported done)
 
@@ -50,7 +55,10 @@ The goal is to run computational analyses required for revision, not to rewrite 
 - `revision_runs/iscience_rev1/metrics_summary.csv`
 - `revision_runs/iscience_rev1/figures/` (png+pdf per workstream)
 - `docs/revision/rebuttal_insertions.md`
+- `docs/revision/HANDOFF.md`  ← **read this first for current state + paste-ready next-step prompts**
 
 # Workflow rule
 
-Plan first (`docs/revision/iscience_revision_plan.md`), wait for user approval, then implement under `code/revision/` and emit outputs into `revision_runs/iscience_rev1/`. After each workstream completes, append a 3-bullet summary to `REPORT.md`.
+Plan first (`docs/revision/iscience_revision_plan.md`), wait for user approval, then implement under `code/revision/` and emit outputs into `revision_runs/iscience_rev1/`. After each workstream completes, append a 3-bullet summary to `REPORT.md` and a paste-ready Results/Methods/rebuttal section to `docs/revision/rebuttal_insertions.md`.
+
+**At session start:** read `CLAUDE.md`, then `docs/revision/HANDOFF.md`, then `revision_runs/iscience_rev1/REPORT.md`. HANDOFF.md contains paste-ready prompts for every pending workstream.
