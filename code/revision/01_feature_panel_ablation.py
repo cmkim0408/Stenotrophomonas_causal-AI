@@ -80,7 +80,13 @@ def main() -> None:
     rand = metrics[metrics["panel_kind"] == "random"]
     others = metrics[metrics["panel_kind"] != "random"]
 
-    def _render_ablation(with_labels: bool) -> None:
+    def _render_ablation(text_mode: str) -> None:
+        """text_mode: 'labelled' (all text + panel-id annotations) OR
+                      'no_labels' (no text at all — axes/ticks/legend/title
+                      removed, for caption-driven SI insertion or
+                      PowerPoint composition; matches paper convention
+                      of '_no_text' variants).
+        """
         fig, axes = plt.subplots(1, 2, figsize=(11, 4.2))
         for ax, metric, ylabel, ylim in (
             (axes[0], "macro_f1", "Macro-F1 (regime classification)", (0.0, 1.02)),
@@ -101,29 +107,38 @@ def main() -> None:
                 sub = sub.sort_values("n_features")
                 ax.plot(sub["n_features"], sub[metric], marker=marker,
                         color=color, lw=1.4, ms=8, label=kind)
-                if with_labels:
+                if text_mode == "labelled":
                     for _, r in sub.iterrows():
                         ax.annotate(r["panel"], (r["n_features"], r[metric]),
                                     xytext=(4, 4), textcoords="offset points",
                                     fontsize=7, color=color)
-            ax.set_xlabel("# features in panel")
-            ax.set_ylabel(ylabel)
             ax.set_ylim(*ylim)
             ax.grid(alpha=0.3)
-            ax.legend(fontsize=8, loc="lower right")
+            if text_mode == "no_labels":
+                # Strip ALL text: axis labels, ticks labels, legend, title
+                ax.set_xlabel(""); ax.set_ylabel("")
+                ax.set_xticklabels([]); ax.set_yticklabels([])
+                ax.tick_params(left=False, bottom=False,
+                               labelleft=False, labelbottom=False)
+            else:
+                ax.set_xlabel("# features in panel")
+                ax.set_ylabel(ylabel)
+                ax.legend(fontsize=8, loc="lower right")
 
-        fig.suptitle("Feature panel ablation: classification & severity-regression performance",
-                     fontsize=11)
+        if text_mode != "no_labels":
+            fig.suptitle(
+                "Feature panel ablation: classification & severity-regression performance",
+                fontsize=11)
         fig.tight_layout()
-        suffix = "" if with_labels else "_no_labels"
+        suffix = "" if text_mode == "labelled" else "_no_labels"
         stem = OUT["figures"] / f"feature_panel_ablation{suffix}"
         fig.savefig(stem.with_suffix(".png"), dpi=180, bbox_inches="tight")
         fig.savefig(stem.with_suffix(".pdf"), bbox_inches="tight")
         plt.close(fig)
         print(f"[01 ablation] wrote figure → {stem.with_suffix('.png')}")
 
-    _render_ablation(with_labels=True)
-    _render_ablation(with_labels=False)
+    _render_ablation("labelled")
+    _render_ablation("no_labels")
 
     # ---------- Markdown summary ----------
     md = ["# Feature panel ablation — summary",

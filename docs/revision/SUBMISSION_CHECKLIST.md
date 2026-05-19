@@ -136,7 +136,7 @@ by EM; you'll upload individual files):
 - [ ] **F5.** Supplementary Information — your existing SI .docx +
   the new SI figures from `revision_runs/iscience_rev1/figures/` and
   `revision_runs/iscience_rev1/0[1-9]_*/`. Include:
-    - `feature_panel_ablation.{png,pdf}` (with labels) + `feature_panel_ablation_no_labels.{png,pdf}` (clean caption-only variant)
+    - `feature_panel_ablation.{png,pdf}` (with all text — axes, legend, panel-id annotations) + `feature_panel_ablation_no_labels.{png,pdf}` (no text at all — axes/ticks/legend/title/annotations stripped; for caption-driven SI insertion or PowerPoint composition)
     - `benchmark_comparison.{png,pdf}`
     - `confusion_matrix.{png,pdf}`
     - `regression_residuals.{png,pdf}`
