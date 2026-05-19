@@ -157,8 +157,8 @@ const COMMENTS = {
     {
       id: "M7",
       comment: 'Clarify causal map representation (Fig. 6): Explain inconsistency between Fig. 6a and 6b (arrows vs no arrows).',
-      response: 'The two panels represent different stages of the PC-bootstrap pipeline (Fig 6a = undirected adjacency; Fig 6b = directed-edge stability). A dedicated audit workstream (#E) is being prepared that re-renders both panels with explicit directed-edge vs undirected-skeleton legends and updates the figure caption to make the stage distinction explicit. This will be included in the next revision iteration.',
-      artefact: 'Planned in workstream #E; caption draft at docs/revision/captions/fig6_legend_v2.md. Next revision iteration.',
+      response: 'Addressed (workstream #E). Audit of the cached PC-bootstrap output confirms that 100% of bootstrap-stable edges are undirected — the PC orientation rules did not succeed within the bootstrap-stable equivalence class. The published Fig 6a arrowheads and Fig 6b "→" labels both imply orientation that the algorithm did not produce. Two fixes applied: (i) Fig 6 caption revised to state explicitly that the edge set is undirected and the inferred structure is a conditional-dependency map rather than an oriented causal DAG; (ii) re-rendered SI figure with consistent undirected convention (no arrowheads in (a); "—" separator in (b)) plus a side-by-side before/after comparison. Caption-level + visualization fix; algorithm is unchanged.',
+      artefact: 'SI Fig SX (09_fig6_audit/fig6_consistent.png/pdf/svg); fig6_before_after.png/pdf; caption v2 (captions/fig6_legend_v2.md); rebuttal §9',
     },
     {
       id: "M8",
@@ -205,8 +205,8 @@ const COMMENTS = {
     {
       id: "R2.2",
       comment: '"Why are arrows shown in Fig. 6b (L626) but not in Fig. 6a?"',
-      response: 'See M7. The two panels represent different stages of the PC-bootstrap pipeline (undirected adjacency vs directed-edge stability). A dedicated audit workstream (#E) is being prepared to re-render both panels with consistent arrow conventions, add an explicit directed-edge vs undirected-skeleton legend, and update the figure caption. Next revision iteration.',
-      artefact: 'Planned in workstream #E. Next revision iteration.',
+      response: 'See M7. Addressed (workstream #E): the cached PC-bootstrap output has 100% undirected edges, so the published Fig 6 mixed arrow conventions both visually imply orientation that the algorithm did not infer. We address this with a revised Fig 6 caption that explicitly describes the structure as a conditional-dependency map over undirected edges, plus a re-rendered SI figure with consistent undirected convention (no arrowheads in (a); em-dash "—" separator in (b)), and a side-by-side before/after audit.',
+      artefact: 'SI Fig SX (09_fig6_audit/fig6_consistent.png/pdf/svg); fig6_before_after; caption v2 (captions/fig6_legend_v2.md); rebuttal §9',
     },
     {
       id: "R2.3",
@@ -265,7 +265,10 @@ const SUMMARY_ROWS = [
   ["Revised Abstract — final sentence reframed (feasible-space)", "Main text Abstract [Line XXX]", "M1; M10; EN"],
   ["Refined wording — 'validated tool' / 'deployable system' removed", "Main text multiple [Line XXX]", "M10"],
   ["Updated Cover letter — novelty re-positioned", "Cover letter", "M10; EN"],
-  ["Planned — Fig 5 LOESS + piecewise + interaction SHAP; Fig 6 directed-vs-undirected legend", "Next revision iteration (workstreams #D, #E)", "M7; M8; R2.2; R2.3"],
+  ["New SI Figure — Fig 6 arrow-consistency audit (re-rendered consistent panels)", "SI Fig SX (09_fig6_audit/fig6_consistent.png/pdf/svg)", "M7; R2.2"],
+  ["New SI Figure — Fig 6 before/after comparison", "SI Fig SX (09_fig6_audit/fig6_before_after.png/pdf)", "M7; R2.2"],
+  ["Revised Fig 6 caption — undirected convention; conditional-dependency map", "Main text Fig 6 caption [Line XXX] (Variant B in fig6_legend_v2.md)", "M7; R2.2"],
+  ["Planned — Fig 5 LOESS + piecewise + interaction SHAP", "Next revision iteration (workstream #D)", "M8; R2.3"],
 ];
 
 // summary table sizing: Change 4400 / Where 2960 / Reviewer 2000

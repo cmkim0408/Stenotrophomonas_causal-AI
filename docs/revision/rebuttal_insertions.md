@@ -508,3 +508,60 @@ manuscript's central novelty claim.*
 | Mandatory 9 (runtime) | #5 runtime | `04_runtime/runtime_summary.md` |
 | Reviewer 1: overall framework logic in Intro | **#7 pointflux** Intro insert (above) | (this file) |
 | Editor: refine claims (concept vs tool) | **#7 pointflux** Cover-letter insert (above) | (this file) |
+
+---
+
+## 9. Fig 6 arrow consistency (Reviewer 2, Mandatory M7)
+
+### Strategic framing
+
+Reviewer 2 asked why arrows appear in Fig 6b but not Fig 6a. The honest
+audit (`code/revision/09_fig6_arrow_audit.py`) of the cached PC-bootstrap
+output (`Fig05_causal_dag__dag_edges.csv`) shows that **100 % of the
+bootstrap-stable edges are undirected** — the published Fig 6a's
+arrowheads and Fig 6b's `→` labels both visually imply orientation that
+the PC algorithm did not actually infer. The fix is *caption-level + a
+re-rendered SI panel*; no algorithm re-run is required, and the
+underlying scientific conclusions are unchanged.
+
+### Results / Methods sentences (insert near Fig 6 description)
+
+> The bootstrap-stable edge set produced by the PC algorithm
+> (Fisher-z independence test, α = 0.05; 100 resamples; minimum stability
+> frequency 0.10) is fully undirected for this dataset — the orientation
+> rules did not succeed within the bootstrap-stable equivalence class. We
+> therefore present the inferred rigidification structure as an
+> **undirected adjacency network with bootstrap stability annotations**.
+> A re-rendered version of Fig 6 with consistent undirected convention
+> (no arrowheads in panel (a); em-dash "—" separator in panel (b)) is
+> provided in the Supplementary Information (Fig SX,
+> `revision_runs/iscience_rev1/09_fig6_audit/fig6_consistent.{png,pdf,svg}`).
+> The Fig 6 caption has been updated accordingly (see Variant B in
+> `docs/revision/captions/fig6_legend_v2.md`).
+
+### Rebuttal answer (Reviewer 2 / Mandatory M7)
+
+> Thank you for flagging the inconsistency between Fig 6a (no arrows) and
+> Fig 6b (arrow notation in the labels). We have audited the cached
+> PC-bootstrap output and confirmed that **the bootstrap-stable edge set
+> is 100 % undirected** — the orientation rules of the PC algorithm did
+> not succeed within the stable equivalence class for this dataset. The
+> previously published Fig 6a rendered arrowheads and Fig 6b's labels
+> used the `→` notation, both visually implying directional inference
+> that the algorithm did not actually produce. We have addressed this in
+> two complementary ways: (i) the Fig 6 caption is revised to state
+> explicitly that the bootstrap-stable edge set is undirected and that
+> the inferred structure is presented as a *conditional-dependency map*
+> rather than an oriented causal DAG (`docs/revision/captions/fig6_legend_v2.md`,
+> Variant B); and (ii) a re-rendered Supplementary Figure with consistent
+> undirected convention (no arrowheads in panel (a); em-dash "—"
+> separator in panel (b)) is provided in
+> `revision_runs/iscience_rev1/09_fig6_audit/fig6_consistent.{png,pdf,svg}`,
+> with a side-by-side before/after comparison in
+> `fig6_before_after.{png,pdf}`. This change is caption-level; the
+> underlying PC bootstrap, the bootstrap-stable backbone, and the
+> hypothesis-prioritization interpretation are unchanged.
+
+**Strength:** ✅ caption revision + 1 SI figure (re-rendered) + 1 SI
+side-by-side audit figure. *Addresses Editor mandatory M7 and Reviewer 2
+comment R2.2.*
