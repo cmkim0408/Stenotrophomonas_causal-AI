@@ -111,6 +111,24 @@ def main() -> None:
             "rmse": round(d.get("rmse", float("nan")), 5),
         })
 
+    pf = _safe_read(OUT / "07_pointflux" / "pointflux_metrics.csv")
+    if pf is not None:
+        rep_label = {
+            "W_widths": "W_widths (ours)", "M_midpoints": "M_midpoints",
+            "PF_pfba": "PF_pfba (signed)", "PFA_pfba_abs": "PFA_|pfba|",
+            "OBJ_only": "OBJ_only (floor)",
+        }
+        for _, r in pf.iterrows():
+            label = f"{r['system']} {rep_label.get(r['representation'], r['representation'])}"
+            rows.append({
+                "workstream": "07_pointflux",
+                "key": label,
+                "n_features": int(r["n_features"]),
+                "macro_f1": round(r["macro_f1"], 4),
+                "r2": round(r["r2"], 4),
+                "rmse": round(r["rmse"], 5),
+            })
+
     metrics_summary = pd.DataFrame(rows,
         columns=["workstream", "key", "n_features", "macro_f1", "r2", "rmse"])
     metrics_summary.to_csv(OUT / "metrics_summary.csv", index=False)
@@ -162,6 +180,27 @@ def main() -> None:
         total = runtime["wall_seconds"].sum()
         md.append(f"| #5 Runtime | total stages = {total:.1f} s on a single core, "
                   f"<420 MB peak RSS |")
+    if pf is not None:
+        def _pf_get(system: str, rep: str, col: str) -> float | None:
+            m = pf[(pf["system"] == system) & (pf["representation"] == rep)]
+            return float(m[col].iloc[0]) if not m.empty else None
+        iso1_w = _pf_get("iSO1_933", "W_widths", "macro_f1")
+        iso1_pf = _pf_get("iSO1_933", "PF_pfba", "macro_f1")
+        iso1_pfa = _pf_get("iSO1_933", "PFA_pfba_abs", "macro_f1")
+        iso1_m = _pf_get("iSO1_933", "M_midpoints", "macro_f1")
+        iml_w = _pf_get("iML1515", "W_widths", "macro_f1")
+        iml_pf = _pf_get("iML1515", "PF_pfba", "macro_f1")
+        iml_pfa = _pf_get("iML1515", "PFA_pfba_abs", "macro_f1")
+        iml_obj = _pf_get("iML1515", "OBJ_only", "macro_f1")
+        line = (
+            f"| #7 Point-flux vs flexibility (novelty) | "
+            f"iSO1: W={iso1_w:.3f}, PF={iso1_pf:.3f}, PFA={iso1_pfa:.3f}, M={iso1_m:.3f} "
+            f"(W beats M by {iso1_w-iso1_m:+.3f}; PFA edges W on iSO1). "
+            f"iML1515: W={iml_w:.3f} vs PF={iml_pf:.3f}, PFA={iml_pfa:.3f}, OBJ-floor={iml_obj:.3f} "
+            f"(**W beats PFA by {iml_w-iml_pfa:+.3f} on the external system**). "
+            f"**Novelty is conceptual + external-system advantage, not raw F1 on iSO1.** |"
+        )
+        md.append(line)
     md.append("")
     md.append("## Placement strategy (main vs SI)")
     md.append("")
@@ -180,7 +219,8 @@ def main() -> None:
                        ("02_benchmarking", "2. Baseline benchmarking"),
                        ("05_existing_data", "3. Existing-data performance summary"),
                        ("03_transfer", "4. External transfer (iML1515)"),
-                       ("04_runtime", "5. Runtime profiling")):
+                       ("04_runtime", "5. Runtime profiling"),
+                       ("07_pointflux", "7. Point-flux vs flexibility (novelty defense)")):
         md.append(f"## {label}")
         md.append("")
         candidates = list((OUT / sub).glob("*summary.md"))

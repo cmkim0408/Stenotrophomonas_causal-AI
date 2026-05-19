@@ -1,7 +1,7 @@
 # Rebuttal insertions — iScience revision
 
 **Branch:** `revision/iscience-rev1`
-**Date:** 2026-05-19 (novelty-defense pass — workstream #7 added)
+**Date:** 2026-05-19 (workstream #7 completed; iML1515 pFBA filled in)
 
 This file collects ready-to-paste paragraphs and point-by-point responses for
 each completed revision workstream. **Numbers are reported conservatively**;
@@ -339,10 +339,22 @@ structure".)
 This is the workstream that directly defends the manuscript's central
 novelty claim — that **flexibility-interval (FVA-width) features support
 feasible-space diagnosis, conceptually distinct from point-state prediction
-(pFBA / FBA)**. The result is intentionally framed as a *concept*-level
-contribution rather than a raw-F1 dominance argument, because on this
-dataset the |pFBA flux| baseline reaches F1 = 0.972 vs our W_widths = 0.957.
-The two answer different questions.
+(pFBA / FBA)**. Two complementary lines of evidence:
+
+1. **On the iSO1 internal dataset** (n=242, 42-reaction panel), W matches
+   PF (W=0.957 vs PF=0.932; W-vs-PF = +0.025 F1) and the same-solve
+   midpoint M (W=0.957 vs M=0.951; W-vs-M = +0.006 F1). The sign-agnostic
+   |pFBA flux| edges out W (PFA=0.972 vs W=0.957). Honest reading: on the
+   internal dataset the F1 picture is a wash.
+2. **On the external iML1515 system** (n=244, 45-reaction panel), W
+   clearly beats both pFBA baselines: W=0.972 vs PF=0.906 vs PFA=0.907
+   (W-vs-PF = **+0.066 F1**). This is the cleanest fair test (different
+   organism, identical pipeline) and the result that supports the
+   novelty claim quantitatively.
+
+The two together support a concept-level contribution rather than a raw-F1
+dominance argument: width and pFBA-magnitude answer *different questions*,
+and on an unseen system the width representation generalizes better.
 
 ### Results paragraph (main text — Discussion or Results closer)
 
@@ -353,21 +365,20 @@ The two answer different questions.
 > (our flexibility feature), FVA midpoint (point center from the same
 > solve), parsimonious-FBA flux (signed; the strongest deterministic
 > point-flux baseline), |pFBA flux| (magnitude), and FBA objective alone.
-> Within the same FVA solve, the interval width outperformed the midpoint
-> by Δmacro-F1 = +0.016 (0.957 vs 0.941) and ΔR² = +0.014 (0.922 vs
-> 0.908), indicating that **the size of the feasible interval carries
-> information beyond the central representative flux**. Against pFBA
-> point-flux (signed), the width also performed slightly better
-> (0.957 vs 0.939). Only the sign-agnostic |pFBA flux| reached numerically
-> higher F1 (0.972) on classification while remaining comparable on
-> severity R² (0.926 vs 0.922). On the iML1515 transfer (244 in silico
-> conditions), the width representation reached macro-F1 = 0.973 vs the
-> scalar-objective floor F1 = 0.289. We interpret these comparisons not
-> as a claim of unique optimality for FVA-width, but as evidence that
-> **flexibility-interval features support a mechanistically interpretable
-> diagnostic representation — degrees of metabolic freedom — that
-> point-flux representations do not, independent of their classification
-> F1**.
+> On the iSO1 internal dataset (n=242, 42-reaction panel), the interval
+> width outperformed the same-solve midpoint by Δmacro-F1 = +0.006
+> (0.957 vs 0.951), and outperformed signed pFBA flux by Δmacro-F1 = +0.025
+> (0.957 vs 0.932). The sign-agnostic |pFBA flux| reached numerically
+> higher F1 on iSO1 (0.972) while remaining comparable on severity R²
+> (0.926 vs 0.922). On the **external iML1515 transfer** (n=244,
+> 45-reaction panel), the width representation cleanly beat the pFBA
+> baselines: macro-F1 = **0.972 (W) vs 0.906 (PF) vs 0.907 (PFA)**, a
+> +0.066 F1 advantage on the cross-organism test. We interpret these
+> comparisons not as a claim of unique optimality for FVA-width on every
+> dataset, but as evidence that **flexibility-interval features support a
+> mechanistically interpretable diagnostic representation — degrees of
+> metabolic freedom — that point-flux representations do not, and that
+> this representation generalizes better to an unseen system**.
 
 ### Methods paragraph
 
@@ -394,23 +405,29 @@ The two answer different questions.
 > comparison: the same XGBoost learner, the same curated panel, the same
 > 5-fold CV — but with the feature representation varied across
 > FVA-width (ours), FVA midpoint, signed pFBA flux, |pFBA flux|, and FBA
-> objective. Within the same FVA solve, the *width* representation
-> outperforms the *midpoint* (Δmacro-F1 = +0.016; ΔR² = +0.014),
-> indicating that the size of the feasible interval carries information
-> beyond the central representative flux. The width is also competitive
-> with or better than signed pFBA point-flux. The |pFBA flux| magnitude
-> reaches higher F1 (0.972 vs 0.957) but answers a different question
-> than the width: |pFBA| describes *where the biomass-maximizing flux
-> goes*, while width describes *how much rerouting capacity remains under
-> the imposed constraint context*. The latter is what supports the
-> downstream rigidification/degree-of-freedom interpretation (Figs 5–6)
-> that point-flux representations cannot produce. The novelty of the
-> method, then, is not that one representation dominates classification
-> F1; it is that **the flexibility-interval representation enables a
-> mechanistic diagnosis of feasible-space collapse that is conceptually
-> distinct from, and not reducible to, point-state prediction**. The
-> point-flux baselines are reported transparently in the SI alongside
-> the width-based results.
+> objective. On the iSO1 internal dataset, width matches or beats every
+> point-flux baseline except |pFBA flux| (W=0.957 vs PFA=0.972), where
+> |pFBA flux| edges higher on classification F1 while remaining equal
+> on severity R². On the **external iML1515 system, width clearly beats
+> both pFBA baselines** (W=0.972 vs PF=0.906, PFA=0.907; +0.066 F1) —
+> the cleanest fair test in this comparison, because the same pipeline
+> is exercised on a different organism without any width-specific
+> tuning. Within the same FVA solve, width also outperforms the
+> midpoint (Δmacro-F1 = +0.006; ΔR² = +0.014), confirming that the
+> *size* of the feasible interval carries information beyond the
+> central representative flux. |pFBA flux| and width answer different
+> questions: |pFBA| describes *where the biomass-maximizing flux goes*,
+> while width describes *how much rerouting capacity remains under the
+> imposed constraint context*. The latter is what supports the
+> downstream rigidification / degree-of-freedom interpretation
+> (Figs 5–6) that point-flux representations cannot produce. The
+> novelty of the method, then, is not that one representation dominates
+> classification F1 on every dataset; it is that **the flexibility-
+> interval representation enables a mechanistic diagnosis of
+> feasible-space collapse that is conceptually distinct from, and not
+> reducible to, point-state prediction, and that generalizes better to
+> an unseen system**. All point-flux baselines are reported
+> transparently in the SI alongside the width-based results.
 
 ### Introduction insert (Reviewer 1 — overall framework logic)
 
@@ -452,15 +469,25 @@ The two answer different questions.
 > as a **proof-of-concept diagnostic platform / hypothesis-prioritization
 > structure**, not a validated deployable tool.
 
-### Note on iML1515 pFBA completion
+### Note on iML1515 pFBA completion (now done — 2026-05-19)
 
-> The iML1515 width and objective-floor baselines have been computed
-> (n=244, macro-F1 = 0.973 vs 0.289). The iML1515 pFBA / |pFBA| baselines
-> require a single additional command run on a machine where iML1515 is
-> already cached: `python code/revision/_pfba_runner.py iml 0 244`
-> followed by re-running `07_pointflux_baseline.py`, which will pick up
-> the cache automatically. The supporting infrastructure (script,
-> resumable per-row parts, cache loader) is fully implemented.
+> The iML1515 pFBA and |pFBA| baselines have been computed (cache:
+> `revision_runs/iscience_rev1/07_pointflux/pfba_fluxes_iml1515.parquet`,
+> 244 × 48). Final iML1515 numbers:
+>
+> | Representation | macro-F1 | R² |
+> |---|---|---|
+> | **W (widths, ours)** | **0.972** | **0.978** |
+> | PF (signed pFBA)     | 0.906 | 0.979 |
+> | PFA (|pFBA flux|)    | 0.907 | 0.978 |
+> | OBJ (scalar floor)   | 0.297 | 0.998* |
+>
+> *OBJ R² ≈ 0.998 is a target-construction artifact (severity =
+> obj/obj_max).
+>
+> The cross-organism W-vs-pFBA gap (+0.066 macro-F1) is the cleanest
+> single quantitative line in support of the manuscript's novelty
+> framing.
 
 **Strength:** ✅ SI figure (`pointflux_vs_width.png`) + 1-paragraph
 Discussion insert + Introduction reframing + Cover-letter sentence.

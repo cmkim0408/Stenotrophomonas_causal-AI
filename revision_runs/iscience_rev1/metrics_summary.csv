@@ -24,10 +24,12 @@ workstream,key,n_features,macro_f1,r2,rmse
 04_runtime,pc_bootstrap,25,,,"0.3154 s, 417.0 MB"
 05_existing_data,"5-fold CV (all_widths, XGBoost)",120,0.9911,(see residual_summary.csv),
 05_existing_data,severity regression,120,,0.9062,0.03374
-07_pointflux,iSO1 W_widths (ours),42,0.9565,0.9216,0.03085
-07_pointflux,iSO1 M_midpoints,28,0.9415,0.9079,0.03344
-07_pointflux,iSO1 PF_pfba (signed),42,0.9387,0.9101,0.03304
-07_pointflux,iSO1 PFA_|pfba|,42,0.972,0.9262,0.02994
-07_pointflux,iSO1 OBJ_only (floor),1,0.9117,0.9264,0.0299
-07_pointflux,iML1515 W_widths (ours),45,0.9733,0.9778,0.03189
-07_pointflux,iML1515 OBJ_only (floor),1,0.2892,0.9983,0.00869
+07_pointflux,iSO1_933 W_widths (ours),42,0.9565,0.9216,0.03085
+07_pointflux,iSO1_933 M_midpoints,28,0.9508,0.9079,0.03344
+07_pointflux,iSO1_933 PF_pfba (signed),42,0.9318,0.9101,0.03304
+07_pointflux,iSO1_933 PFA_|pfba|,42,0.972,0.9262,0.02994
+07_pointflux,iSO1_933 OBJ_only (floor),1,0.9117,0.9264,0.0299
+07_pointflux,iML1515 W_widths (ours),45,0.9718,0.9778,0.03189
+07_pointflux,iML1515 OBJ_only (floor),1,0.2969,0.9983,0.00869
+07_pointflux,iML1515 PF_pfba (signed),45,0.9058,0.9793,0.03073
+07_pointflux,iML1515 PFA_|pfba|,45,0.9067,0.9783,0.03153
