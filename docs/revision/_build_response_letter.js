@@ -163,8 +163,8 @@ const COMMENTS = {
     {
       id: "M8",
       comment: 'Clarify interpretation of non-linearity (Fig. 5): Revise text/plots to clearly demonstrate or justify "non-linear effects."',
-      response: 'We acknowledge that the Fig 5b/c plots do not visually demonstrate the non-linearity claim. A dedicated reanalysis workstream (#D) is being prepared that overlays LOESS / two-knot piecewise-linear fits with an F-test against the linear baseline and computes SHAP interaction values for the top severity features. If the F-test fails to support strict non-linearity, the manuscript will adopt the conservative wording "threshold-like or interaction-modulated effects." Next revision iteration.',
-      artefact: 'Planned in workstream #D; outputs at revision_runs/iscience_rev1/08_nonlinearity/. Next revision iteration.',
+      response: 'Addressed (workstream #D). Verdict: STRONG_NONLINEAR. OOF SHAP values from 5-fold CV (seed=42) were tested against the linear null with three diagnostics — LOESS overlay, piecewise-linear with grid-searched breakpoint + F-test, and degree-2 polynomial + F-test. All three top OOF-SHAP severity features rejected the linear null in BOTH the piecewise and polynomial tests (p < 1e-4 in every comparison): width__ADCS Δ R² = +0.425 with a piecewise breakpoint at ≈ 0 (data-driven flexibility-collapse tipping point); width__12DGR120tipp Δ R² = +0.166, bp ≈ 3.06; width__ACONT Δ R² = +0.053, bp ≈ 1973.8. The "non-linear effects" wording is therefore quantitatively supported; the revised caption tightens it to explicit breakpoints and Δ R² numbers (Variant A in fig5_caption_v2.md).',
+      artefact: 'SI Fig SX (08_nonlinearity/fig5_dependence_with_fits.png/pdf); SI Fig SX (fig5_shap_interactions.png/pdf); SI tables nonlinearity_metrics.csv, shap_interactions.csv; caption v2 (captions/fig5_caption_v2.md); rebuttal §8',
     },
     {
       id: "M9",
@@ -211,8 +211,8 @@ const COMMENTS = {
     {
       id: "R2.3",
       comment: '"It is a little confusing that the authors declared the \'non-linear effects\', while it seems like a linear relationship just without regression line in Fig. 5b, c (L623)."',
-      response: 'See M8. A dedicated reanalysis workstream (#D) is being prepared to overlay LOESS / piecewise-linear fits with formal F-tests against a linear baseline and to compute SHAP interaction values. If the F-test does not support strict non-linearity, the manuscript will be revised to use the more conservative wording "threshold-like or interaction-modulated effects." Next revision iteration.',
-      artefact: 'Planned in workstream #D. Next revision iteration.',
+      response: 'See M8. Addressed (workstream #D). Verdict: STRONG_NONLINEAR. OOF SHAP dependence reanalysis applied LOESS + piecewise + polynomial F-tests; all three top severity features rejected the linear null in both the piecewise (p < 1e-4) and polynomial (p < 1e-3) tests. The dominant signal is in width__ADCS (Δ R² = +0.425 piecewise vs linear; breakpoint ≈ 0 — a data-driven flexibility-collapse tipping point). The revised SI figure overlays all three fits on each OOF SHAP scatter and reports breakpoints + p-values directly.',
+      artefact: 'SI Fig SX (08_nonlinearity/fig5_dependence_with_fits.png/pdf); SI Fig SX (fig5_shap_interactions.png/pdf); SI table nonlinearity_metrics.csv; caption v2 (captions/fig5_caption_v2.md); rebuttal §8',
     },
     {
       id: "R2.4",
@@ -268,7 +268,10 @@ const SUMMARY_ROWS = [
   ["New SI Figure — Fig 6 arrow-consistency audit (re-rendered consistent panels)", "SI Fig SX (09_fig6_audit/fig6_consistent.png/pdf/svg)", "M7; R2.2"],
   ["New SI Figure — Fig 6 before/after comparison", "SI Fig SX (09_fig6_audit/fig6_before_after.png/pdf)", "M7; R2.2"],
   ["Revised Fig 6 caption — undirected convention; conditional-dependency map", "Main text Fig 6 caption [Line XXX] (Variant B in fig6_legend_v2.md)", "M7; R2.2"],
-  ["Planned — Fig 5 LOESS + piecewise + interaction SHAP", "Next revision iteration (workstream #D)", "M8; R2.3"],
+  ["New SI Figure — Fig 5 SHAP dependence with LOESS / piecewise / polynomial fits (verdict: STRONG_NONLINEAR)", "SI Fig SX (08_nonlinearity/fig5_dependence_with_fits.png/pdf)", "M8; R2.3"],
+  ["New SI Figure — Fig 5 SHAP pairwise interactions (top-3 features × strongest partners)", "SI Fig SX (08_nonlinearity/fig5_shap_interactions.png/pdf)", "M8; R2.3"],
+  ["New SI Table — Fig 5 non-linearity F-test metrics + SHAP interactions", "SI Tables (08_nonlinearity/nonlinearity_metrics.csv, shap_interactions.csv)", "M8; R2.3"],
+  ["Revised Fig 5 caption — explicit breakpoints + Δ R² (Variant A in fig5_caption_v2.md)", "Main text Fig 5 caption [Line XXX]", "M8; R2.3"],
 ];
 
 // summary table sizing: Change 4400 / Where 2960 / Reviewer 2000
@@ -304,7 +307,7 @@ children.push(P(
   "To address the editor's ten mandatory revisions and both reviewers' specific comments, we additionally performed: (#1) a six-level feature-panel ablation across panels of size 10–300 plus random-30 controls across ten seeds, showing diagnostic performance is largely insensitive to panel size (Δmacro-F1 ≤ 0.04) and that the curated panel is therefore an interpretability-oriented layer rather than a performance optimum; (#2) a baseline benchmark on the same 5-fold split comparing inputs-only, GEM-summary, and same-panel logistic-regression / random-forest / XGBoost models, supporting that the diagnostic signal is carried primarily by the flexibility-based representation rather than a uniquely optimal learner; (#3) an existing-data performance summary on the LHS-derived diagnostic dataset (5-fold CV macro-F1 = 0.991, severity R² = 0.906, C10 sealed-cap mid-O2 condition identified as top mismatch); (#4) an in-silico transfer demonstration to Escherichia coli iML1515 using the unchanged diagnostic workflow (macro-F1 = 0.972, R² = 0.978 on 244 LHS conditions); (#5) a runtime and scalability characterization (single-CPU, end-to-end pipeline wall-clock ≈ 3.2 s, peak memory < 420 MB); and an extended FVA campaign that re-ran targeted FVA on 180 missing reactions across all 242 conditions, expanding the deployed width__ universe to ~300 columns and bringing paper-named TCA / respiration anchors (MDH, ICDHx, ICDHyr, ICL, MALS, PYK, PPC, NADH16pp, FUM, …) into the analysis."
 ));
 children.push(P(
-  "Throughout the revision, we have refined our claims to characterize the framework as a proof-of-concept diagnostic platform and a hypothesis-prioritization structure rather than a validated deployable tool. Two reviewer points — the Fig 5 non-linearity interpretation and the Fig 6 arrow inconsistency — are being addressed by dedicated reanalysis workstreams (LOESS / piecewise / interaction-SHAP for Fig 5; directed-edge vs undirected-skeleton legend for Fig 6) that are scheduled for the next revision iteration and are noted transparently in the per-comment table below."
+  "Throughout the revision, we have refined our claims to characterize the framework as a proof-of-concept diagnostic platform and a hypothesis-prioritization structure rather than a validated deployable tool. The two reviewer points that initially appeared to require deferral — the Fig 5 non-linearity interpretation and the Fig 6 arrow inconsistency — have both been addressed within this revision: a dedicated SHAP-dependence reanalysis (workstream #D; OOF 5-fold; LOESS + piecewise + polynomial F-tests; verdict STRONG_NONLINEAR with width__ADCS piecewise Δ R² = +0.425 and a data-driven flexibility-collapse breakpoint at width ≈ 0; SI Fig SX fig5_dependence_with_fits.png), and a Fig 6 arrow-consistency audit (workstream #E; the cached PC-bootstrap output is 100% undirected, and both panels are re-rendered with consistent undirected convention; SI Fig SX fig6_consistent.png). Every editor mandatory revision and every reviewer comment is therefore answered in this iteration by a quantitative analysis or a wording/caption update that is fully traceable to the supporting repository."
 ));
 
 children.push(H(1, "Per-comment table"));

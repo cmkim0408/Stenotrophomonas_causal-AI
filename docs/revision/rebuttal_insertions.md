@@ -1,7 +1,7 @@
 # Rebuttal insertions — iScience revision
 
 **Branch:** `revision/iscience-rev1`
-**Date:** 2026-05-19 (workstream #7 completed; iML1515 pFBA filled in)
+**Date:** 2026-05-19 (workstreams #D + #E completed; deferred-count = 0)
 
 This file collects ready-to-paste paragraphs and point-by-point responses for
 each completed revision workstream. **Numbers are reported conservatively**;
@@ -565,3 +565,111 @@ underlying scientific conclusions are unchanged.
 **Strength:** ✅ caption revision + 1 SI figure (re-rendered) + 1 SI
 side-by-side audit figure. *Addresses Editor mandatory M7 and Reviewer 2
 comment R2.2.*
+
+---
+
+## 8. Non-linearity defense (Reviewer 2, Mandatory M8)
+
+### Strategic framing
+
+**Verdict (workstream #D): `STRONG_NONLINEAR`.** Both the
+piecewise-linear (knot grid-searched between the 10th and 90th
+percentile) and the degree-2 polynomial F-tests significantly improve
+over the linear baseline (p < 1e-4 in every comparison) on the top-3
+out-of-fold SHAP severity features. The largest signal is in
+`width__ADCS` (Δ R² piecewise vs linear = **+0.425**; breakpoint
+≈ 0.00), followed by `width__12DGR120tipp` (Δ R² = +0.166;
+breakpoint ≈ 3.06) and `width__ACONT` (Δ R² = +0.053; breakpoint
+≈ 1973.79). The breakpoint at `width__ADCS` ≈ 0 is a data-driven
+**flexibility-collapse tipping point** — exactly the rigidification
+interpretation the manuscript advances.
+
+Note: top-3 features are computed on the extended ~300-width universe
+(workstream #B), so the ranking differs slightly from the published Fig
+5b/5c (`width__ADCS` is rank 3 here vs rank 1 in the original 120-width
+universe). All three features span the same TCA / acetate-uptake /
+amino-acid-biosynthesis module structure that paper Fig 5 emphasises.
+
+### Results paragraph (insert near current Fig 5 description)
+
+> To assess Reviewer 2's concern that the published Fig 5b/5c dependence
+> plots did not visually demonstrate the "non-linear effects" claim, we
+> re-derived OUT-OF-FOLD SHAP values (5-fold CV, random_state = 42) on
+> the extended-universe XGBoost severity regressor and applied a 3-test
+> non-linearity battery: (i) LOESS overlay; (ii) continuous
+> piecewise-linear regression with the knot chosen by grid search over
+> the 10th–90th percentile range, F-tested against the linear baseline;
+> (iii) degree-2 polynomial OLS, F-tested against the linear baseline.
+> The three top OOF-SHAP features (`width__ACONT`, `width__12DGR120tipp`,
+> `width__ADCS`) all rejected the linear null in both tests (p < 1e-4),
+> with Δ R² ranging from +0.05 (`width__ACONT`) to **+0.425**
+> (`width__ADCS`). The piecewise breakpoint for `width__ADCS` was
+> ≈ 0, identifying a data-driven flexibility-collapse tipping point at
+> which the SHAP slope changes sharply as the feasible interval of ADC
+> synthase contracts to zero. SHAP pairwise-interaction analysis
+> additionally identified `width__12DGR120tipp` (lipid biosynthesis
+> transport) and `width__ACONT` (TCA-cycle aconitase) as the strongest
+> partners modulating the top severity feature's dependence
+> (`shap_interactions.csv`). The "non-linear effects" wording in the
+> manuscript is therefore quantitatively supported.
+
+### Methods paragraph
+
+> Non-linearity diagnostics for Fig 5. For each of the top-3 OOF-SHAP
+> severity features, out-of-fold SHAP contributions from a 5-fold CV
+> XGBoost regressor (300 trees, max_depth = 4, hist; random_state = 42)
+> were used to prevent leakage. Three non-linearity tests were applied:
+> (i) LOESS (`statsmodels.nonparametric.smoothers_lowess`, frac = 0.40);
+> (ii) continuous piecewise-linear regression with the knot location
+> grid-searched over 41 equally spaced points between the 10th and 90th
+> percentile of each feature, with an F-test against the single-linear
+> baseline; (iii) degree-2 polynomial OLS with an F-test against the
+> linear baseline. Pairwise SHAP-interaction values were extracted via
+> `Booster.predict(pred_interactions = True)` from a full-data fit; for
+> each top feature, the partner with the largest mean |interaction|
+> was visualised as a coloured-scatter dependence plot. Outputs:
+> `revision_runs/iscience_rev1/08_nonlinearity/` (`fig5_dependence_with_fits.{png,pdf}`,
+> `fig5_shap_interactions.{png,pdf}`, `nonlinearity_metrics.csv`,
+> `shap_interactions.csv`, `nonlinearity_summary.md`, `verdict.txt`).
+
+### Rebuttal answer (Reviewer 2 / Mandatory M8)
+
+> Thank you for flagging that the published Fig 5b/5c dependence plots
+> did not visually demonstrate the "non-linear effects" claim. We have
+> performed a dedicated non-linearity reanalysis using out-of-fold SHAP
+> values (5-fold CV) to prevent leakage and applied three statistical
+> tests per feature: LOESS overlay, piecewise-linear regression with
+> grid-searched breakpoint and F-test, and degree-2 polynomial OLS with
+> F-test. The verdict is **`STRONG_NONLINEAR`**: both the piecewise and
+> polynomial tests reject the linear null on all three top OOF-SHAP
+> severity features (p < 1e-4 in every comparison). The most informative
+> finding is a data-driven breakpoint for `width__ADCS` at ≈ 0, with the
+> piecewise fit improving the linear R² by Δ = +0.425 — this is the
+> flexibility-collapse tipping point that the manuscript's rigidification
+> interpretation predicts. We provide the updated dependence panel with
+> all three fits overlaid (SI Fig SX,
+> `revision_runs/iscience_rev1/08_nonlinearity/fig5_dependence_with_fits.{png,pdf}`)
+> and a separate SHAP-interaction visualisation showing the strongest
+> partner reactions (`fig5_shap_interactions.{png,pdf}`). The Fig 5
+> caption is revised accordingly (`docs/revision/captions/fig5_caption_v2.md`,
+> Variant A). The "non-linear effects" wording is retained; the revised
+> caption tightens it to explicit breakpoints and Δ R² numbers so that
+> the claim is reproducible from the SI metrics table.
+
+### Wording recommendation
+
+The published main text uses "non-linear effects" without quantitative
+support. The recommended replacement (matching the test outcomes) is:
+
+> "...SHAP dependence reveals **data-driven tipping points**, with
+> piecewise-linear breakpoints (p < 1e-4 vs linear baseline) at
+> `width__ADCS` ≈ 0 (flexibility-collapse threshold; Δ R² = +0.425),
+> `width__12DGR120tipp` ≈ 3.06 (Δ R² = +0.166), and `width__ACONT` ≈
+> 1973.8 (Δ R² = +0.053)..."
+
+Insert at [Main text Fig 5 description, Line XXX].
+
+**Strength:** ✅ SI figure (dependence with fits) + SI figure (SHAP
+interactions) + SI table (`nonlinearity_metrics.csv`) + caption revision
++ Methods paragraph. *Addresses Editor mandatory M8 and Reviewer 2
+comment R2.3 with quantitative evidence; no retreat needed.*

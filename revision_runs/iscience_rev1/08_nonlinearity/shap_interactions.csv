@@ -1,0 +1,4 @@
+feature,partner,mean_abs_interaction,partner_idx
+width__ACONT,width__12DGR120tipp,0.004670883063226938,0
+width__12DGR120tipp,width__ACONT,0.004670868162065744,36
+width__ADCS,width__ACONT,0.004512215498834848,36
