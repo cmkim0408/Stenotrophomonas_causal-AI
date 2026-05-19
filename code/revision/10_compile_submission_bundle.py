@@ -760,7 +760,8 @@ def write_checklist(hk_rows: list[dict]) -> None:
         "- [ ] **F5.** Supplementary Information — your existing SI .docx +",
         "  the new SI figures from `revision_runs/iscience_rev1/figures/` and",
         "  `revision_runs/iscience_rev1/0[1-9]_*/`. Include:",
-        "    - `feature_panel_ablation.{png,pdf}`",
+        "    - `feature_panel_ablation.{png,pdf}` (with labels) + "
+        "`feature_panel_ablation_no_labels.{png,pdf}` (clean caption-only variant)",
         "    - `benchmark_comparison.{png,pdf}`",
         "    - `confusion_matrix.{png,pdf}`",
         "    - `regression_residuals.{png,pdf}`",

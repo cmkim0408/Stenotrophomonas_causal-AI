@@ -77,48 +77,53 @@ def main() -> None:
     metrics.to_csv(OUT["ws"] / "ablation_metrics.csv", index=False)
 
     # ---------- Figure: panel size vs metric, with random envelope ----------
-    fig, axes = plt.subplots(1, 2, figsize=(11, 4.2))
-
     rand = metrics[metrics["panel_kind"] == "random"]
     others = metrics[metrics["panel_kind"] != "random"]
 
-    for ax, metric, ylabel, ylim in (
-        (axes[0], "macro_f1", "Macro-F1 (regime classification)", (0.0, 1.02)),
-        (axes[1], "r2",       "R² (severity regression)",        (-0.1, 1.02)),
-    ):
-        # Random envelope (mean ± std at n=30)
-        if not rand.empty:
-            mean, std = rand[metric].mean(), rand[metric].std()
-            ax.axhspan(mean - std, mean + std, color="lightgray", alpha=0.7,
-                       label=f"random_30 ±1σ (mean={mean:.3f})")
-            ax.axhline(mean, color="gray", lw=0.8, ls="--")
+    def _render_ablation(with_labels: bool) -> None:
+        fig, axes = plt.subplots(1, 2, figsize=(11, 4.2))
+        for ax, metric, ylabel, ylim in (
+            (axes[0], "macro_f1", "Macro-F1 (regime classification)", (0.0, 1.02)),
+            (axes[1], "r2",       "R² (severity regression)",        (-0.1, 1.02)),
+        ):
+            # Random envelope (mean ± std at n=30)
+            if not rand.empty:
+                mean, std = rand[metric].mean(), rand[metric].std()
+                ax.axhspan(mean - std, mean + std, color="lightgray", alpha=0.7,
+                           label=f"random_30 ±1σ (mean={mean:.3f})")
+                ax.axhline(mean, color="gray", lw=0.8, ls="--")
 
-        for kind, marker, color in (("curated", "D", "#0072B2"),
-                                    ("top_k",   "o", "#E69F00"),
-                                    ("full",    "s", "#009E73")):
-            sub = others[others["panel_kind"] == kind]
-            if sub.empty: continue
-            sub = sub.sort_values("n_features")
-            ax.plot(sub["n_features"], sub[metric], marker=marker,
-                    color=color, lw=1.4, ms=8, label=kind)
-            for _, r in sub.iterrows():
-                ax.annotate(r["panel"], (r["n_features"], r[metric]),
-                            xytext=(4, 4), textcoords="offset points",
-                            fontsize=7, color=color)
-        ax.set_xlabel("# features in panel")
-        ax.set_ylabel(ylabel)
-        ax.set_ylim(*ylim)
-        ax.grid(alpha=0.3)
-        ax.legend(fontsize=8, loc="lower right")
+            for kind, marker, color in (("curated", "D", "#0072B2"),
+                                        ("top_k",   "o", "#E69F00"),
+                                        ("full",    "s", "#009E73")):
+                sub = others[others["panel_kind"] == kind]
+                if sub.empty: continue
+                sub = sub.sort_values("n_features")
+                ax.plot(sub["n_features"], sub[metric], marker=marker,
+                        color=color, lw=1.4, ms=8, label=kind)
+                if with_labels:
+                    for _, r in sub.iterrows():
+                        ax.annotate(r["panel"], (r["n_features"], r[metric]),
+                                    xytext=(4, 4), textcoords="offset points",
+                                    fontsize=7, color=color)
+            ax.set_xlabel("# features in panel")
+            ax.set_ylabel(ylabel)
+            ax.set_ylim(*ylim)
+            ax.grid(alpha=0.3)
+            ax.legend(fontsize=8, loc="lower right")
 
-    fig.suptitle("Feature panel ablation: classification & severity-regression performance",
-                 fontsize=11)
-    fig.tight_layout()
-    fig.savefig(OUT["figures"] / "feature_panel_ablation.png", dpi=180,
-                bbox_inches="tight")
-    fig.savefig(OUT["figures"] / "feature_panel_ablation.pdf", bbox_inches="tight")
-    plt.close(fig)
-    print(f"[01 ablation] wrote figure → {OUT['figures'] / 'feature_panel_ablation.png'}")
+        fig.suptitle("Feature panel ablation: classification & severity-regression performance",
+                     fontsize=11)
+        fig.tight_layout()
+        suffix = "" if with_labels else "_no_labels"
+        stem = OUT["figures"] / f"feature_panel_ablation{suffix}"
+        fig.savefig(stem.with_suffix(".png"), dpi=180, bbox_inches="tight")
+        fig.savefig(stem.with_suffix(".pdf"), bbox_inches="tight")
+        plt.close(fig)
+        print(f"[01 ablation] wrote figure → {stem.with_suffix('.png')}")
+
+    _render_ablation(with_labels=True)
+    _render_ablation(with_labels=False)
 
     # ---------- Markdown summary ----------
     md = ["# Feature panel ablation — summary",
