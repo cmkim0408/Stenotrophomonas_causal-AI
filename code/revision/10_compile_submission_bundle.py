@@ -760,16 +760,13 @@ def write_checklist(hk_rows: list[dict]) -> None:
         "- [ ] **F5.** Supplementary Information — your existing SI .docx +",
         "  the new SI figures from `revision_runs/iscience_rev1/figures/` and",
         "  `revision_runs/iscience_rev1/0[1-9]_*/`. Include:",
-        "    - `feature_panel_ablation.{png,pdf}` (with all text — axes, "
-        "legend, panel-id annotations) + "
-        "`feature_panel_ablation_no_labels.{png,pdf}` (no text at all — "
-        "axes/ticks/legend/title/annotations stripped; for caption-driven "
-        "SI insertion or PowerPoint composition)",
-        "    - `benchmark_comparison.{png,pdf}`",
-        "    - `confusion_matrix.{png,pdf}`",
-        "    - `regression_residuals.{png,pdf}`",
-        "    - `external_transfer.{png,pdf}`",
-        "    - `pointflux_vs_width.{png,pdf}`",
+        "    - `feature_panel_ablation.{png,pdf}` (+ `_no_labels.{png,pdf}`)",
+        "    - `benchmark_comparison.{png,pdf}` (+ `_no_labels.{png,pdf}`)",
+        "    - `confusion_matrix.{png,pdf}` (+ `_no_labels.{png,pdf}`)",
+        "    - `regression_residuals.{png,pdf}` (+ `_no_labels.{png,pdf}`)",
+        "    - `external_transfer.{png,pdf}` (+ `_no_labels.{png,pdf}`)",
+        "    - `pointflux_vs_width.{png,pdf}` (+ `_no_labels.{png,pdf}`)",
+        "    - **`_no_labels` variants** = no text at all (axes/ticks/legend/title/annotations stripped); for caption-driven SI insertion or PowerPoint composition. The labelled version remains the default for self-contained reading; pick the variant that fits the caption strategy.",
         "    - `08_nonlinearity/fig5_dependence_with_fits.{png,pdf}`",
         "    - `08_nonlinearity/fig5_shap_interactions.{png,pdf}`",
         "    - `09_fig6_audit/fig6_consistent.{png,pdf,svg}`",

@@ -228,11 +228,12 @@ def main() -> None:
     fig.suptitle("Cross-system top features — iSO1_933 vs iML1515 (in silico transfer)",
                  fontsize=11)
     fig.tight_layout()
-    fig.savefig(OUT["figures"] / "external_transfer.png", dpi=180,
-                bbox_inches="tight")
+    base = OUT["figures"] / "external_transfer.png"
+    fig.savefig(base, dpi=180, bbox_inches="tight")
     fig.savefig(OUT["figures"] / "external_transfer.pdf", bbox_inches="tight")
+    u.save_no_labels_variant(fig, base)
     plt.close(fig)
-    print(f"  wrote external_transfer.{{png,pdf}}")
+    print(f"  wrote external_transfer.{{png,pdf}} (+ _no_labels variant)")
 
     # ----- Markdown summary -----
     md = ["# External transfer (iML1515) — summary",

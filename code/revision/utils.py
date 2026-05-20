@@ -346,6 +346,53 @@ def env_summary() -> dict[str, str]:
     }
 
 
+def strip_all_text(fig) -> None:
+    """In-place: remove every text element from a matplotlib Figure.
+
+    Removes axis labels, axis titles, tick labels (preserves tick marks
+    and grid), legends, annotations, suptitle, figure-level legends, and
+    figure-level texts. Used to produce '_no_labels' variants suitable
+    for caption-driven SI insertion or PowerPoint composition (paper
+    convention; matches the '_no_text' suffix used elsewhere in the
+    project).
+
+    Note: in-place. After calling this, the figure should be saved and
+    closed; do not rely on subsequent reads.
+    """
+    for ax in fig.axes:
+        ax.set_xlabel("")
+        ax.set_ylabel("")
+        ax.set_title("")
+        ax.tick_params(axis="both", which="both",
+                       labelbottom=False, labelleft=False,
+                       labeltop=False, labelright=False)
+        leg = ax.get_legend()
+        if leg is not None:
+            leg.remove()
+        for txt in list(ax.texts):
+            txt.remove()
+    if getattr(fig, "_suptitle", None) is not None:
+        fig._suptitle.set_text("")
+    for leg in list(getattr(fig, "legends", [])):
+        leg.remove()
+    for txt in list(fig.texts):
+        txt.set_text("")
+
+
+def save_no_labels_variant(fig, base_path: Path) -> None:
+    """Save a no-text companion next to base_path: <stem>_no_labels.{png,pdf}.
+
+    Call AFTER saving the labelled version. Mutates the figure (strips
+    text), saves both PNG and PDF, then leaves the figure open for the
+    caller to close.
+    """
+    strip_all_text(fig)
+    stem = base_path.parent / f"{base_path.stem}_no_labels"
+    import matplotlib.pyplot as _plt
+    fig.savefig(stem.with_suffix(".png"), dpi=180, bbox_inches="tight")
+    fig.savefig(stem.with_suffix(".pdf"), bbox_inches="tight")
+
+
 def ensure_outdirs(workstream: str) -> dict[str, Path]:
     base = REVISION_OUT
     paths = {

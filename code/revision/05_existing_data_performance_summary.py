@@ -50,6 +50,7 @@ def _confusion_matrix_plot(cm: np.ndarray, classes: list[str], path: Path) -> No
     fig.tight_layout()
     fig.savefig(path.with_suffix(".png"), dpi=180, bbox_inches="tight")
     fig.savefig(path.with_suffix(".pdf"), bbox_inches="tight")
+    u.save_no_labels_variant(fig, path.with_suffix(".png"))
     plt.close(fig)
 
 
@@ -74,6 +75,7 @@ def _residual_plot(y_true: np.ndarray, y_pred: np.ndarray, path: Path) -> None:
     fig.tight_layout()
     fig.savefig(path.with_suffix(".png"), dpi=180, bbox_inches="tight")
     fig.savefig(path.with_suffix(".pdf"), bbox_inches="tight")
+    u.save_no_labels_variant(fig, path.with_suffix(".png"))
     plt.close(fig)
 
 

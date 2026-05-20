@@ -148,11 +148,12 @@ def main() -> None:
     fig.suptitle("Benchmark: feature set × ML model (5-fold CV on regime_dataset)",
                  fontsize=10, y=1.06)
     fig.tight_layout()
-    fig.savefig(OUT["figures"] / "benchmark_comparison.png", dpi=180,
-                bbox_inches="tight")
+    base = OUT["figures"] / "benchmark_comparison.png"
+    fig.savefig(base, dpi=180, bbox_inches="tight")
     fig.savefig(OUT["figures"] / "benchmark_comparison.pdf", bbox_inches="tight")
+    u.save_no_labels_variant(fig, base)
     plt.close(fig)
-    print(f"[02 benchmark] wrote figure → {OUT['figures'] / 'benchmark_comparison.png'}")
+    print(f"[02 benchmark] wrote figure → {base} (+ _no_labels variant)")
 
     # ---------- Markdown summary ----------
     md = ["# Baseline benchmarking — summary",

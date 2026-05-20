@@ -387,10 +387,12 @@ def main() -> None:
                  "(5-fold CV, same curated panel, same XGBoost)",
                  fontsize=10.5, y=1.10)
     fig.tight_layout()
-    fig.savefig(OUT["figures"] / "pointflux_vs_width.png", dpi=180, bbox_inches="tight")
+    base = OUT["figures"] / "pointflux_vs_width.png"
+    fig.savefig(base, dpi=180, bbox_inches="tight")
     fig.savefig(OUT["figures"] / "pointflux_vs_width.pdf", bbox_inches="tight")
+    u.save_no_labels_variant(fig, base)
     plt.close(fig)
-    print(f"[07 pointflux] wrote figure → {OUT['figures'] / 'pointflux_vs_width.png'}")
+    print(f"[07 pointflux] wrote figure → {base} (+ _no_labels variant)")
 
     # ----- Markdown summary (with strategic framing) -----
     def _g(system: str, rep: str, col: str) -> float | None:
