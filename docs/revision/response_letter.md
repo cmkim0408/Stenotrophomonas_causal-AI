@@ -101,6 +101,7 @@ The table below records each editor and reviewer comment verbatim, our response,
 | Revised Abstract — final sentence reframed to emphasise feasible-space framing | Main text — Abstract [Line XXX] | M1; M10; EN |
 | Refined wording throughout — "validated tool" / "deployable system" removed; replaced with "proof-of-concept", "hypothesis-prioritization structure", "in silico demonstration" | Main text — multiple [Line XXX] | M10 |
 | Updated Cover letter — novelty re-positioned as conceptual (feasible-space) + cross-organism quantitative advantage | Cover letter | M10; EN |
+| Funding statement — added KIMST grant (RS-2026-25536446, Jeonbuk–Jeonnam Sea Grant) covering the additional computational analyses performed during revision | Main text — Acknowledgement / Funding [Line XXX] | (editor housekeeping H_FUNDING) |
 | New SI Figure — Fig 5 SHAP dependence with LOESS / piecewise / polynomial fits (verdict: STRONG_NONLINEAR) | SI Fig SX (`08_nonlinearity/fig5_dependence_with_fits.{png,pdf}`) | M8; R2.3 |
 | New SI Figure — Fig 5 SHAP pairwise interactions (top-3 features × strongest partners) | SI Fig SX (`08_nonlinearity/fig5_shap_interactions.{png,pdf}`) | M8; R2.3 |
 | New SI Table — Fig 5 non-linearity F-test metrics + SHAP interactions | SI Tables (`08_nonlinearity/nonlinearity_metrics.csv`, `shap_interactions.csv`) | M8; R2.3 |

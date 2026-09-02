@@ -265,6 +265,7 @@ const SUMMARY_ROWS = [
   ["Revised Abstract — final sentence reframed (feasible-space)", "Main text Abstract [Line XXX]", "M1; M10; EN"],
   ["Refined wording — 'validated tool' / 'deployable system' removed", "Main text multiple [Line XXX]", "M10"],
   ["Updated Cover letter — novelty re-positioned", "Cover letter", "M10; EN"],
+  ["Funding statement — added KIMST grant (RS-2026-25536446, Jeonbuk–Jeonnam Sea Grant) covering the additional computational analyses performed during revision", "Main text — Acknowledgement / Funding [Line XXX]", "(editor housekeeping H_FUNDING)"],
   ["New SI Figure — Fig 6 arrow-consistency audit (re-rendered consistent panels)", "SI Fig SX (09_fig6_audit/fig6_consistent.png/pdf/svg)", "M7; R2.2"],
   ["New SI Figure — Fig 6 before/after comparison", "SI Fig SX (09_fig6_audit/fig6_before_after.png/pdf)", "M7; R2.2"],
   ["Revised Fig 6 caption — undirected convention; conditional-dependency map", "Main text Fig 6 caption [Line XXX] (Variant B in fig6_legend_v2.md)", "M7; R2.2"],
